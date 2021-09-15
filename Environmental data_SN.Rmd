@@ -1,0 +1,968 @@
+---
+title: "Erebus Environmental Data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning=FALSE,
+                      fig.align = "left",
+                      fig.width = 10,
+                      fig.height = 6)
+```
+
+
+```{r Libraries and seed}
+
+# Libraries
+library("tidyverse")       # data wrangling and visualisation   
+library("corrplot")        # graphical display of a correlation matrix
+library("GGally")          # ggplot2 extension for plots - inspect several plots together
+library("vegan")           # multivariate analysis
+library("patchwork")       # arrange plots
+library ("cowplot")        # set a theme
+library("here")            # set the path to the folder 
+library("viridis")          # for color palettes
+library("ggpubr")         # for arranging plots
+
+set.seed(57)
+```
+
+
+```{r}
+# Load the data
+envdata <-  read.csv("Erebus_env_data.csv", header = TRUE, row.names = 1)
+
+```
+
+The goal of this analysis is to show that in terms of environmental data the sampling sites are different from each other - this enables the hypothesis that the microbial communities dwelling at these sites will be different as well
+
+##### Overview of the data
+```{r}
+# Abiotic factors
+
+# Create abiotic factors data table
+abiotic <- envdata[,1:9]
+
+# Inspect the data for correlations between factors - using GGally
+
+abiotic %>% 
+  select(Transect, Temperature, pH, Conductivity, GWC, Carbon, Nitrogen) %>%
+  ggpairs(aes(color = Transect)) +
+  ggtitle("Abiotic factor correlation by sampling sub transect")
+
+# Do any of the elements show correlations with pH? Answer: not really, best is
+# Mg, correlation of 0.6 with pH.
+
+icp_el <- envdata[,1:33]
+
+icp_el %>%
+  select(Transect, Na, Mg, K, Ca, Sr, Ba, pH) %>%
+  ggpairs(aes(color = Transect))
+
+icp_el %>%
+  select(Transect, P, S, Se, Al, Tl, pH) %>%
+  ggpairs(aes(color = Transect)) +
+  ggtitle("Elements correlation by transect")
+
+icp_el %>%
+  select(Transect, Pb, B, As, V, Cr, Mn, pH) %>%
+  ggpairs(aes(color = Transect)) +
+  ggtitle("Elements correlation by transect")
+
+icp_el %>%
+  select(Transect, Fe, Co, Ni, Cu, Zn, Cd, U, pH) %>%
+  ggpairs(aes(color = Transect)) +
+  ggtitle("Elements correlation by transect")
+
+```
+
+##### Analysis by sampling site
+
+```{r}
+### stats for env parameters
+abiotic <- abiotic %>% mutate(`C:N` = Carbon / Nitrogen)
+
+t.test(pH~Site, data = abiotic)
+t.test(Conductivity~Site, data = abiotic)
+t.test(GWC~Site, data = abiotic)
+t.test(Carbon~Site, data = abiotic)
+t.test(Nitrogen~Site, data = abiotic)
+t.test(`C:N`~Site, data = abiotic)
+
+#pH, EC, GWC, TC, TN are all significant between TR and WC
+```
+
+```{r}
+
+### Analyse data by temperature in each site
+### First make column with C:N
+abiotic["Site"][abiotic["Site"] == "Tramway Ridge"] <- "TR"
+abiotic["Site"][abiotic["Site"] == "Western Crater"] <- "WC"
+
+temp_pH_avg <- ggplot(data = abiotic, aes(x = Site, y = pH,
+                                          fill = Site)) +
+  geom_boxplot() +
+  ylab("pH") +
+  theme_bw() +
+  scale_fill_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_conductivity_avg <- ggplot(data = abiotic, aes(x = Site, y = Conductivity,
+                                                    fill = Site)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  ylab("EC (μS/cm)") +
+  theme_bw() +
+  scale_fill_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_gwc_avg <- ggplot(data = abiotic, aes(x = Site, y = GWC,
+                                           fill = Site)) +
+  geom_boxplot() +
+  ylab("GWC (%)") +
+  scale_fill_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position = "none")
+
+temp_carbon_avg <- ggplot(data = abiotic, aes(x = Site, y = Carbon,
+                                              fill = Site)) +
+  geom_boxplot() +
+  ylab("TC (%)") +
+  scale_fill_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_nitrogen_avg <- ggplot(data = abiotic, aes(x = Site, y = Nitrogen,
+                                                fill = Site)) +
+  geom_boxplot() +
+  ylab("TN (%)") +
+  scale_fill_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_cn_avg <- ggplot(data = abiotic, aes(x = Site, y = `C:N`,
+                                          fill = Site)) +
+  geom_boxplot() +
+  ylab("TC:TN") +
+  scale_fill_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+###
+### within site variability
+###
+
+temp_pH <- ggplot(data = abiotic, aes(x = Temperature, y = pH)) +
+  geom_line(aes(colour = Site)) +
+  geom_point(aes(colour=Site), size=2) +
+  ylab("pH") +
+  theme_bw() +
+  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_conductivity <- ggplot(data = abiotic, aes(x = Temperature, y = Conductivity)) +
+  geom_line(aes(colour = Site)) +
+  geom_point(aes(colour=Site), size=2) +
+  scale_y_log10() +
+  ylab("EC (μS/cm)") +
+  theme_bw() +
+  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_gwc <- ggplot(data = abiotic, aes(x = Temperature, y = GWC)) +
+  geom_line(aes(colour = Site)) +
+  geom_point(aes(colour=Site), size=2) +
+  ylab("GWC (%)") +
+  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position = "none")
+
+temp_carbon <- ggplot(data = abiotic, aes(x = Temperature, y = Carbon)) +
+  geom_line(aes(colour = Site)) +
+  geom_point(aes(colour=Site), size=2) +
+  ylab("TC (%)") +
+  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_nitrogen <- ggplot(data = abiotic, aes(x = Temperature, y = Nitrogen)) +
+  geom_line(aes(colour = Site)) +
+  geom_point(aes(colour=Site), size=2) +
+  ylab("TN (%)") +
+  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_cn <- ggplot(data = abiotic, aes(x = Temperature, y = `C:N`)) +
+  geom_line(aes(colour = Site)) +
+  geom_point(aes(colour=Site), size=2) +
+  ylab("TC:TN") +
+  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+env_box <- ggarrange(temp_pH_avg, temp_conductivity_avg, temp_gwc_avg, 
+          temp_carbon_avg, temp_nitrogen_avg, temp_cn_avg,
+          ncol = 3,
+          nrow = 2)
+          
+          
+env_lines <- ggarrange(temp_pH, temp_conductivity, temp_gwc, 
+          temp_carbon, temp_nitrogen, temp_cn,
+          ncol = 3, nrow = 2)
+
+env_box
+env_lines
+
+```
+
+
+```{r}
+### Metals
+# # Start by selecting the metals we saw that may be different between transects
+
+t.test(Na~Site, data = envdata)
+t.test(Mg~Site, data = envdata)
+t.test(K~Site, data = envdata)
+t.test(Ca~Site, data = envdata)
+t.test(Sr~Site, data = envdata)
+t.test(Ba~Site, data = envdata)
+t.test(P~Site, data = envdata)
+t.test(S~Site, data = envdata)
+t.test(Se~Site, data = envdata)
+t.test(Al~Site, data = envdata)
+t.test(Tl~Site, data = envdata)
+t.test(Pb~Site, data = envdata)
+t.test(B~Site, data = envdata)
+t.test(As~Site, data = envdata)
+t.test(V~Site, data = envdata)
+t.test(Cr~Site, data = envdata)
+t.test(Mn~Site, data = envdata)
+t.test(Fe~Site, data = envdata)
+t.test(Co~Site, data = envdata)
+t.test(Ni~Site, data = envdata)
+t.test(Cu~Site, data = envdata)
+t.test(Zn~Site, data = envdata)
+t.test(Cd~Site, data = envdata)
+t.test(U~Site, data = envdata)
+
+#Mg, P, Tl, Cr, Mn, and Cd are all significant. S, Cu, Fe, Zn, and Pb have interesting temp patterns
+```
+
+```{r}
+#ICPMS plotting
+
+metals3<- envdata %>%
+  select(Site, Temperature, Mg, P, Tl, Cr, Mn, Cd, S, Cu, Fe, Zn, Pb) 
+
+metals3["Site"][metals3["Site"] == "Tramway Ridge"] <- "TR"
+metals3["Site"][metals3["Site"] == "Western Crater"] <- "WC"
+
+metals3 <- metals3 %>%
+  pivot_longer(!c(Site, Temperature), names_to ="Element", values_to = "values")
+
+plot_metal3_box <- ggplot(metals3, aes(x = Site, y = values,
+                                       fill = Site)) + 
+  geom_boxplot() +
+  facet_wrap(Element~., scales = "free_y", ncol = 3) +
+  ylab("ppb") +
+  #xlab("Temperature (\u00b0C)") +
+  theme_bw() +
+  scale_y_continuous(n.breaks = 4) +
+  scale_fill_manual(values=c("#a6611a", "#67a9cf")) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(size=11),
+    axis.title.y = element_text(size=13),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=12),
+    strip.background = element_blank(),
+    legend.position = "none")
+
+plot_metal3_lines <- ggplot(metals3, aes(x = Temperature, y = values)) + 
+  geom_line(aes(color = Site)) +
+  geom_point(aes(colour = Site), size=2) +
+  facet_wrap(Element~., scales = "free_y", ncol = 3) +
+  ylab("ppb") +
+  #xlab("Temperature (\u00b0C)") +
+  theme_bw() +
+  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+  scale_y_continuous(n.breaks = 4) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(size=11),
+    axis.title.y = element_text(size=13),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=12),
+    strip.background = element_blank(),
+    legend.position = "none")
+
+plot_metal3_box
+plot_metal3_lines
+
+```
+
+```{r}
+all_geochem <- ggarrange(env_box, env_lines,
+                         plot_metal3_box, plot_metal3_lines,
+          labels = c("A","B","C","D"),
+          ncol = 2,
+          nrow = 2,
+          heights = c(0.9, 1.5),
+          common.legend = TRUE,
+          legend = "bottom")
+
+all_geochem
+
+#ggsave("Figure 2A-D.png", all_geochem, width = 240, height = 160, units = "mm", dpi = 300)
+
+#ggsave("Figure 2A-D.svg", all_geochem, width = 240, height = 160, units = "mm", dpi = 300)
+
+```
+
+
+###Same plot, but comparing TR1 and TR2
+
+```{r}
+### stats for env parameters
+abiotic_tr <- abiotic %>% mutate(`C:N` = Carbon / Nitrogen) %>%
+    filter(., Transect != "WC")
+
+t.test(pH~Transect, data = abiotic_tr)
+t.test(Conductivity~Transect, data = abiotic_tr)
+t.test(GWC~Transect, data = abiotic_tr)
+t.test(Carbon~Transect, data = abiotic_tr)
+t.test(Nitrogen~Transect, data = abiotic_tr)
+t.test(`C:N`~Transect, data = abiotic_tr)
+
+#nothing is significant
+```
+
+```{r}
+
+### Analyse data by temperature in TR
+
+temp_pH_avg_tr <- ggplot(data = abiotic_tr, aes(x = Transect, y = pH,
+                                          fill = Transect)) +
+  geom_boxplot() +
+  ylab("pH") +
+  theme_bw() +
+  scale_fill_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_conductivity_avg_tr <- ggplot(data = abiotic_tr, aes(x = Transect, y = Conductivity,
+                                                    fill = Transect)) +
+  geom_boxplot() +
+  ylab("EC (μS/cm)") +
+  theme_bw() +
+  scale_fill_manual(values=c("#b2182b","#ef8a62")) +
+      scale_y_continuous(n.breaks = 4) +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_gwc_avg_tr <- ggplot(data = abiotic_tr, aes(x = Transect, y = GWC,
+                                           fill = Transect)) +
+  geom_boxplot() +
+  ylab("GWC (%)") +
+  scale_fill_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position = "none")
+
+temp_carbon_avg_tr <- ggplot(data = abiotic_tr, aes(x = Transect, y = Carbon,
+                                              fill = Transect)) +
+  geom_boxplot() +
+  ylab("TC (%)") +
+  scale_fill_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_nitrogen_avg_tr <- ggplot(data = abiotic_tr, aes(x = Transect, y = Nitrogen,
+                                                fill = Transect)) +
+  geom_boxplot() +
+  ylab("TN (%)") +
+  scale_fill_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_cn_avg_tr <- ggplot(data = abiotic_tr, aes(x = Transect, y = `C:N`,
+                                          fill = Transect)) +
+  geom_boxplot() +
+  ylab("TC:TN") +
+  scale_fill_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+###
+### within site variability
+###
+
+temp_pH_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = pH)) +
+  geom_line(aes(colour = Transect)) +
+  geom_point(aes(colour=Transect), size=2) +
+  ylab("pH") +
+  theme_bw() +
+  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_conductivity_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = Conductivity)) +
+  geom_line(aes(colour = Transect)) +
+  geom_point(aes(colour=Transect), size=2) +
+  ylab("EC (μS/cm)") +
+  theme_bw() +
+  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
+      scale_y_continuous(n.breaks = 4) +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_gwc_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = GWC)) +
+  geom_line(aes(colour = Transect)) +
+  geom_point(aes(colour=Transect), size=2) +
+  ylab("GWC (%)") +
+  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position = "none")
+
+temp_carbon_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = Carbon)) +
+  geom_line(aes(colour = Transect)) +
+  geom_point(aes(colour=Transect), size=2) +
+  ylab("TC (%)") +
+  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_nitrogen_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = Nitrogen)) +
+  geom_line(aes(colour = Transect)) +
+  geom_point(aes(colour=Transect), size=2) +
+  ylab("TN (%)") +
+  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+temp_cn_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = `C:N`)) +
+  geom_line(aes(colour = Transect)) +
+  geom_point(aes(colour=Transect), size=2) +
+  ylab("TC:TN") +
+  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+env_box_tr <- ggarrange(temp_pH_avg_tr, temp_conductivity_avg_tr, temp_gwc_avg_tr, 
+          temp_carbon_avg_tr, temp_nitrogen_avg_tr, temp_cn_avg_tr,
+          ncol = 3,
+          nrow = 2)
+          
+          
+env_lines_tr <- ggarrange(temp_pH_tr, temp_conductivity_tr, temp_gwc_tr, 
+          temp_carbon_tr, temp_nitrogen_tr, temp_cn_tr,
+          ncol = 3, nrow = 2)
+
+env_box_tr
+env_lines_tr
+
+```
+
+```{r}
+### Metals
+# # Start by selecting the metals we saw that may be different between transects
+
+envdata_tr <- envdata %>%
+      filter(., Transect != "WC")
+
+t.test(Na~Transect, data = envdata_tr)
+t.test(Mg~Transect, data = envdata_tr)
+t.test(K~Transect, data = envdata_tr)
+t.test(Ca~Transect, data = envdata_tr)
+t.test(Sr~Transect, data = envdata_tr)
+t.test(Ba~Transect, data = envdata_tr)
+t.test(P~Transect, data = envdata_tr)
+t.test(S~Transect, data = envdata_tr)
+t.test(Se~Transect, data = envdata_tr)
+t.test(Al~Transect, data = envdata_tr)
+t.test(Tl~Transect, data = envdata_tr)
+t.test(Pb~Transect, data = envdata_tr)
+t.test(B~Transect, data = envdata_tr)
+t.test(As~Transect, data = envdata_tr)
+t.test(V~Transect, data = envdata_tr)
+t.test(Cr~Transect, data = envdata_tr)
+t.test(Mn~Transect, data = envdata_tr)
+t.test(Fe~Transect, data = envdata_tr)
+t.test(Co~Transect, data = envdata_tr)
+t.test(Ni~Transect, data = envdata_tr)
+t.test(Cu~Transect, data = envdata_tr)
+t.test(Zn~Transect, data = envdata_tr)
+t.test(Cd~Transect, data = envdata_tr)
+t.test(U~Transect, data = envdata_tr)
+
+#none are significant
+```
+
+```{r}
+#ICPMS plotting
+
+metals3_tr <- envdata %>%
+  select(Transect, Temperature, Mg, P, Tl, Cr, Mn, Cd, S, Cu, Fe, Zn, Pb) %>%
+  filter(., Transect != "WC")
+
+metals3_tr <- metals3_tr %>%
+  pivot_longer(!c(Transect, Temperature), names_to ="Element", values_to = "values")
+
+plot_metal3_box_tr <- ggplot(metals3_tr, aes(x = Transect, y = values,
+                                       fill = Transect)) + 
+  geom_boxplot() +
+  facet_wrap(Element~., scales = "free_y", ncol = 3) +
+  ylab("ppb") +
+  #xlab("Temperature (\u00b0C)") +
+  theme_bw() +
+  scale_y_continuous(n.breaks = 4) +
+  scale_fill_manual(values=c("#b2182b","#ef8a62")) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(size=11),
+    axis.title.y = element_text(size=13),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=12),
+    strip.background = element_blank(),
+    legend.position = "none")
+
+plot_metal3_lines_tr <- ggplot(metals3_tr, aes(x = Temperature, y = values)) + 
+  geom_line(aes(color = Transect)) +
+  geom_point(aes(colour = Transect), size=2) +
+  facet_wrap(Element~., scales = "free_y", ncol = 3) +
+  ylab("ppb") +
+  #xlab("Temperature (\u00b0C)") +
+  theme_bw() +
+  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
+  scale_y_continuous(n.breaks = 4) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(size=11),
+    axis.title.y = element_text(size=13),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=12),
+    strip.background = element_blank(),
+    legend.position = "none")
+
+plot_metal3_box_tr
+plot_metal3_lines_tr
+
+```
+
+
+```{r}
+all_geochem_tr <- ggarrange(env_box_tr, env_lines_tr,
+                         plot_metal3_box_tr, plot_metal3_lines_tr,
+          labels = c("A","B","C","D"),
+          ncol = 2,
+          nrow = 2,
+          heights = c(0.9, 1.5),
+          common.legend = TRUE,
+          legend = "bottom")
+
+all_geochem_tr
+
+#ggsave("Figure 3A-D.png", all_geochem_tr, width = 240, height = 160, units = "mm", dpi = 300)
+
+#ggsave("Figure 3A-D.svg", all_geochem_tr, width = 240, height = 160, units = "mm", dpi = 300)
+
+```
+
+
+```{r}
+#PCoA of all env data
+# Select numeric data to transform with z-score
+
+envdata_scl <- as.matrix(envdata[,4:38])
+envdata_scl<- scale(envdata_scl)
+
+# Get the information about the sampling sites
+envdata_map <- envdata[,1:3]
+
+# Merge sampling sites file and transformed data
+envdata.ord <- merge(envdata_map, envdata_scl, by = "row.names", all.x=TRUE)  %>%
+  column_to_rownames("Row.names")
+
+# Calculate euclidean distances
+envdata.ord.dis <- vegdist(envdata_scl, method="euclidean", na.rm=TRUE)
+
+# PCoA
+pcoa.envdata.ord <- cmdscale(envdata.ord.dis, eig = T)
+
+# Create a dataframe to plot the PCoA 
+PCoA.envdata.ord <- data.frame(PCoA1 = pcoa.envdata.ord$points[,1], PCoA2 = pcoa.envdata.ord$points[,2])
+PCoA.envdata.ord.df<- merge(PCoA.envdata.ord , envdata, by="row.names", sort = F) %>%
+  column_to_rownames("Row.names")
+
+# How much % of the variance is explained by the axes?
+round(pcoa.envdata.ord$eig*100/sum(pcoa.envdata.ord$eig),1)
+
+```
+
+```{r}
+# PCoA - This is the env data without the ICPMS data
+
+# Select numeric data to transform with z-score
+abiotic_scl <- as.matrix(abiotic[,4:9])
+abiotic_scl<- scale(abiotic_scl)
+
+# Get the information about the sampling sites
+abiotic_map <- abiotic[,1:3]
+
+# Merge sampling sites file and transformed data
+abiotic.ord <- merge(abiotic_map, abiotic_scl, by = "row.names", all.x=TRUE)  %>%
+  column_to_rownames("Row.names")
+
+# Calculate euclidean distances
+abiotic.ord.dis <- vegdist(abiotic_scl, method="euclidean", na.rm=TRUE)
+
+# PCoA
+pcoa.abiotic.ord <- cmdscale(abiotic.ord.dis, eig = T)
+
+# Create a dataframe to plot the PCoA 
+PCoA.abiotic.ord <- data.frame(PCoA1 = pcoa.abiotic.ord$points[,1], PCoA2 = pcoa.abiotic.ord$points[,2])
+PCoA.abiotic.ord.df<- merge(PCoA.abiotic.ord , abiotic, by="row.names", sort = F) %>%
+  column_to_rownames("Row.names")
+
+# How much % of the variance is explained by the axes?
+round(pcoa.abiotic.ord$eig*100/sum(pcoa.abiotic.ord$eig),1)
+```
+
+```{r}
+# Plot PCoA
+
+pcoa.envdata<- ggplot(data = PCoA.envdata.ord.df, aes(x = PCoA1, y = PCoA2,
+                                       color = pH, shape = Transect)) + 
+  geom_point(size = 5) +
+  #geom_text(label = rownames(PCoA.envdata.ord.df),
+        #    nudge_x = 0.25, nudge_y = 0.25, 
+         #   check_overlap = T) +
+  labs(y="PCoA2 (29.5%)", x="PCoA1 (39.8%)") +
+  scale_color_viridis("pH", direction = -1) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_text(size=16),
+    axis.text.x  = element_text(size=16),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=16),
+    strip.text = element_text(size=16),
+    strip.background = element_blank(),
+    legend.text = element_text(size=14),
+    legend.title = element_text(size=14))
+
+pcoa.abiotic<- ggplot(data = PCoA.abiotic.ord.df, aes(x = PCoA1, y = PCoA2,
+                                       color = pH, shape = Transect)) + 
+  geom_point(size = 5) +
+  #geom_text(label = rownames(PCoA.abiotic.ord.df),
+   #         nudge_x = 0.2, nudge_y = 0.2, 
+    #        check_overlap = T) +
+  scale_color_viridis("pH", direction = -1) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_text(size=16),
+    axis.text.x  = element_text(size=16),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=16),
+    strip.text = element_text(size=16),
+    strip.background = element_blank(),
+    legend.text = element_text(size=14),
+    legend.title = element_text(size=14)) +
+  labs(y="PCoA2 (20.6%)", x="PCoA1 (61.3%)")
+
+# Without ICPMS data, more of the variation is explained
+
+###Final Pcoa plot of abiotic data 
+pcoa_both <- ggarrange(pcoa.envdata, pcoa.abiotic, 
+                       labels=c("A","B"),
+          ncol = 2, nrow = 1)
+pcoa_both
+
+#ggsave("Figure S2A-B.png", pcoa_both, width = 240, height = 90, units = "mm", dpi = 300)
+
+#ggsave("Figure S2A-B.svg", pcoa_both, width = 240, height = 90, units = "mm", dpi = 300)
+
+```
+
+```{r}
+# how much variation in env data is explained when metals are normalized by Al?
+
+envdata2 <- envdata %>% mutate(`C:N` = Carbon / Nitrogen)
+
+normmetals_pcoa<- envdata2 %>% mutate(Sample2 = Sample) %>%
+  select(Sample2,Sample,Site,Transect,Temperature,pH,Conductivity,`C:N`,GWC,Na, Mg, K, Ca, Sr, 
+         Ba, P, S, Se, Al, Tl, Pb, 
+         B, As, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Cd, U) %>% 
+  pivot_longer(!c(Sample2,Sample,Site,Transect,Temperature,pH,Conductivity,`C:N`,GWC,Al), 
+               names_to ="Element", values_to = "values") %>%
+  mutate(norm = values / Al) %>%
+  select(Sample2,Sample,Site,Transect,Temperature,pH,Conductivity,`C:N`,GWC,
+         Element, norm) %>% 
+  pivot_wider(names_from = "Element", values_from = "norm") %>%
+  column_to_rownames("Sample2")
+
+# Select numeric data to transform with z-score
+envdata_norm <- as.matrix(normmetals_pcoa[,4:31])
+envdata_norm<- scale(envdata_norm)
+
+# Get the information about the sampling sites
+envdata_map <- envdata[,1:3]
+
+# Merge sampling sites file and transformed data
+envdata_norm.ord <- merge(envdata_map, envdata_norm, by = "row.names", all.x=TRUE)  %>%
+  column_to_rownames("Row.names")
+
+# Calculate euclidean distances
+envdata_norm.ord.dis <- vegdist(envdata_norm, method="euclidean", na.rm=TRUE)
+
+# PCoA
+pcoa.envdata_norm.ord <- cmdscale(envdata_norm.ord.dis, eig = T)
+
+# Create a dataframe to plot the PCoA 
+PCoA.envdata_norm.ord <- data.frame(PCoA1 = pcoa.envdata_norm.ord$points[,1], PCoA2 = pcoa.envdata_norm.ord$points[,2])
+PCoA.envdata_norm.ord.df<- merge(PCoA.envdata_norm.ord , normmetals_pcoa, by="row.names", sort = F) %>%
+  column_to_rownames("Row.names")
+
+# How much % of the variance is explained by the axes?
+round(pcoa.envdata_norm.ord$eig*100/sum(pcoa.envdata_norm.ord$eig),1)
+
+```
+
+```{r}
+# Compare ordination of data either with ICPMS, without ICPMS, or with metals normalized by Al
+
+pcoa.normmet<- ggplot(data = PCoA.envdata_norm.ord.df, aes(x = PCoA1, y = PCoA2,
+                                       color = pH, shape = Transect)) + 
+  geom_point(size = 3) +
+  geom_text(label = rownames(PCoA.envdata_norm.ord.df),
+            nudge_x = 0.25, nudge_y = 0.25, 
+            check_overlap = T) +
+  labs(y="PCoA2 (27.8%)", x="PCoA1 (37.5%)") +
+  ggtitle("PCoA of Environmental data (metals normalized)")
+
+pcoa.envdata + pcoa.abiotic + pcoa.normmet
+
+
+```
+
+```{r}
+# try plotting elements normalized by Al
+
+normmetals<- envdata %>%
+  select(Sample,Transect,Temperature,Na, Mg, K, Ca, Sr, Ba, P, S, Se, Al, Tl, Pb, 
+         B, As, V, Cr, Mn, Fe, Co, Ni, Cu, Zn, Cd, U) %>% 
+  pivot_longer(!c(Sample, Temperature,Transect, Al), names_to ="Element", values_to = "values") %>%
+  mutate(norm = values / Al) %>%
+  select(Sample, Transect, Temperature, Element, norm) %>% 
+  pivot_wider(names_from = "Element", values_from = "norm") %>%
+  column_to_rownames("Sample") %>%
+  pivot_longer(!c(Transect, Temperature), names_to ="Element", values_to = "values")
+
+
+plot_elements_norm <- ggplot(normmetals, aes(x = Temperature, y = values)) + 
+  geom_line(aes(color = Transect)) +
+  geom_point(aes(colour = Site, size=4)) +
+  facet_wrap(Element~., scales = "free_y", ncol = 3) +
+  ylab("ppb") +
+  xlab("Temperature (ºC)") +
+  theme_bw() +
+  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+  theme(
+    axis.title.x = element_text(size=16),
+    axis.text.x = element_text(size=10, angle=45, hjust=1),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=12),
+    strip.text = element_text(size=14),
+    strip.background = element_blank(),
+    legend.title = element_text(size=16),
+    legend.text = element_text(size=16))+
+  guides(size = "none")
+
+```

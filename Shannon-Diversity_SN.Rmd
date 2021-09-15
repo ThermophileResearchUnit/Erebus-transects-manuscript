@@ -1,0 +1,54 @@
+---
+title: "Erebus Alpha Diversity"
+author: "Stephen Noell"
+date: "13/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning=FALSE,
+                      fig.align = "left",
+                      fig.width = 10,
+                      fig.height = 6)
+```
+
+```{r}
+# Libraries
+library("phyloseq")
+library("svglite") #for saving SVGs
+library("ggplot2")
+
+set.seed(57)
+```
+
+```{r}
+
+erebus <- readRDS("erebus")
+
+GP <- prune_taxa(taxa_sums(erebus) > 0, erebus)
+
+shannon_plot <- plot_richness(GP, x="Transect", color="Transect",  measures=c("Shannon"))  +
+  geom_boxplot(aes(colour = Transect)) +
+  ylab("Shannon Index") +
+  xlab("Transect") +
+  scale_colour_manual(values=c("#b2182b","#ef8a62", "#67a9cf"),
+                      name = "Transect") +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=16),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=16),
+    strip.text = element_text(size=16),
+    strip.background = element_blank(),
+    legend.position="bottom",
+    legend.text = element_text (size = 14),
+    legend.title = element_text(size = 16))
+
+ggsave("Figure S4A.png", shannon_plot, width = 100, height = 100, units = "mm", dpi = 300)
+
+ggsave("Figure S4A.svg", shannon_plot, width = 100, height = 100, units = "mm", dpi = 300)
+
+```

@@ -1,0 +1,155 @@
+---
+title: "Emily Thesis Analysis"
+author: "Mafalda S. Baptista"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.align = "center",
+                      fig.width = 10,
+                      fig.height = 6)
+```
+
+
+```{r}
+
+# Libraries
+library("tidyverse")       # data wrangling and visualisation
+library("phyloseq")        # analysis of microbial communities
+library("patchwork")       # plots together
+library("here")            # set the path to the folder
+library("ggplot2")
+library("ggpubr") #for putting figs together
+library("RColorBrewer") #for color palettes
+library("svglite") #for saving SVGs
+
+set.seed(57)
+```
+
+
+```{r}
+
+# This phyloseq object has the ASVs numbered and the correct metadata 
+
+erebus <- readRDS("erebus")  # 1018
+erebus
+
+```
+
+
+```{r}
+
+# Filter the data
+
+erebusf <- subset_taxa (erebus, (Kingdom !="Eukaryota")) 
+erebusf <- subset_taxa (erebusf, (Order !="Chloroplast") | is.na(Order)) 
+erebusf <- subset_taxa (erebusf, (Family != "Mitochondria") | is.na(Family)) 
+erebusf
+
+```
+```{r Normalise}
+# Transform the data to relative abundance
+
+erebusfr<- transform_sample_counts(erebusf, function(x) x / sum(x) )
+
+```
+
+
+#### Fig Stacked Barplot
+
+```{r}
+
+## Domain
+
+# Data for plotting
+erebus_domain <- erebusfr %>%
+  tax_glom(taxrank = "Kingdom") %>% 
+  psmelt() %>%                                         
+  arrange(Kingdom)
+
+#new colors
+pal_barn <- RColorBrewer::brewer.pal(8, "PuOr")
+pal_barn2 <- RColorBrewer::brewer.pal(8, "RdBu")
+
+pal_barnf <- c("black", pal_barn, pal_barn2)
+
+# Plot
+plot_kingdom<- ggplot(erebus_domain, aes(x = factor(Temperature), y = Abundance, 
+                     fill = factor(Kingdom, levels = c("Bacteria", "Archaea")))) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ Transect, scales = "free") +
+  scale_fill_manual(values = c("#b3e2cd","#e41a1c")) +
+  labs(x = "Temperature (\u00b0C)", y = "Relative \nAbundance") +
+  theme(
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 16),
+    panel.background = element_blank(),
+    axis.ticks.x = element_blank(),
+    legend.title = element_blank(),
+    legend.text = element_text(size=13),
+    axis.text.x  = element_text(size=13),
+    axis.title.x = element_text(size=13),
+    axis.text.y  = element_text(size=13),
+    axis.title.y = element_text(size=13),
+    plot.title = element_text(size=20, hjust = -0.05)) +
+  coord_cartesian(expand = FALSE)
+
+
+## Phylum
+
+# Data for plotting
+erebus_p <- erebusfr %>% psmelt() #%>%
+   #filter(Abundance > 0.01) 
+
+erebus_p["Phylum"][erebus_p["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
+erebus_p["Phylum"][which(erebus_p$Abundance < 0.01), ] <- "Phyla < 1 %"
+
+#Reorder phyla so <1% is first, then alphabetical
+x <- c("Phyla < 1 %","Acidobacteriota","Actinobacteriota","Armatimonadota",
+                                    "Bacteroidota", "Chloroflexi","Cyanobacteria",
+                                    "Deinococcota","Firmicutes","GAL15",
+                                    "Myxococcota","Nitrospirota", "Planctomycetota",
+                                    "Proteobacteria","Thaumarchaeota","Verrucomicrobiota",
+                                    "WPS-2")
+
+erebus_p$Phylum <- factor(as.character(erebus_p$Phylum), levels=x)
+erebus_p <- erebus_p[order(erebus_p$Phylum),]
+
+
+# Plot 
+plot_phylum<- ggplot(erebus_p, aes(x = factor(Temperature), y = Abundance, fill = Phylum)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ Transect, scales = "free") +
+  scale_fill_manual(values = pal_barnf) +
+  labs(x = "Temperature (\u00b0C)", y = "Relative Abundance") +
+  theme(
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 16),
+    panel.background = element_blank(),
+    axis.ticks.x = element_blank(),
+    legend.title = element_blank(),
+    legend.text = element_text(size=12),
+    axis.text.x  = element_text(size=16),
+    axis.title.x = element_text(size=16),
+    axis.text.y  = element_text(size=16),
+    axis.title.y = element_text(size=16),
+    plot.title = element_text(size=20, hjust = -0.05)) +
+  coord_cartesian(expand = FALSE)
+
+plot_phylum
+
+plot_kingdom_phylum <- ggarrange(plot_kingdom, plot_phylum,
+          labels = c("A", "B"),
+          heights = c(0.5,1),
+          ncol = 1, nrow = 2)
+
+plot_kingdom_phylum
+
+#ggsave("Figure 4_SN.png", plot = plot_kingdom_phylum, dpi = 300, width = 240, height = 180, units = "mm")
+
+#ggsave("Figure 4_SN.svg", plot = plot_kingdom_phylum, dpi = 300, width = 240, height = 180, units = "mm")
+
+```

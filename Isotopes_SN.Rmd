@@ -1,0 +1,166 @@
+---
+title: "Isotopes_MountErebus"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.align = "center",
+                      fig.width = 10,
+                      fig.height = 6)
+```
+
+
+```{r}
+library("tidyverse")       # data wrangling and visualisation
+library("patchwork")       # arrange plots
+library("scico")           # palette to choose colours (but make colours consistent troughout the document)
+library ("cowplot")        # set a theme
+library("here")            # set the path to the folder 
+#library("ggtern")          # ternary plots
+library("ggpubr")
+library("svglite") #for saving SVGs
+
+set.seed(57)
+```
+
+
+```{r}
+# Isotopes
+
+
+# Load the data
+isotopes <- read.csv("Isotopes_MountErebus.csv", header = TRUE)
+
+# Grab some colours
+scico(6, palette = "batlow")
+
+# Pb Isotopes
+
+isotopes %>%
+  select(Transect, Pb_206, Pb_207, Pb_208) %>%
+  pivot_longer(-c(Transect)) %>%
+  ggplot(aes(x = name, y = value, fill = Transect)) +
+  geom_boxplot() +
+  facet_grid(~Transect) +
+  xlab("") +
+  ylab("Concentration (ppb)") +
+  scale_fill_manual(values=c("#b2182b","#ef8a62", "#67a9cf")) +
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+  strip.text.x = element_blank()
+  )
+
+#ggsave("Pb_isotopes_boxplot.png", dpi = 300, height = 4, width = 9)
+```
+
+
+```{r}
+isotopes %>%
+  select(Transect, Pb_206, Pb_207, Pb_208) %>%
+  pivot_longer(-c(Transect), names_to = "Isotope") %>%
+  ggplot(aes(x = Transect, y = value, fill = Isotope)) +
+  geom_boxplot() +
+  facet_grid(~Isotope) +
+  xlab("") +
+  ylab("Concentration (ppb)") +
+  scale_fill_manual(values=c("#b2182b","#ef8a62", "#67a9cf")) +
+  theme_bw() +
+  theme(
+     strip.background = element_blank(),
+  strip.text.x = element_blank()
+    )
+
+#ggsave("Pb_isotopes_boxplot_transect.png", dpi = 300, height = 4, width = 9)
+```
+
+
+```{r}
+# Pb Isotope ratios
+
+isotopes_ratio <- isotopes %>%
+  select(Transect, Pb_206, Pb_207, Pb_208) %>%
+  mutate(`Pb 206/207` = Pb_206 / Pb_207) %>%
+  mutate(`Pb 208/207` = Pb_208 / Pb_207) %>% 
+  select(-c(Pb_206, Pb_207, Pb_208)) %>% 
+  pivot_longer(-c(Transect), names_to = "Isotope")
+
+ratios_box <- ggplot(data = isotopes_ratio, 
+                         aes(x = Transect, y = value, fill = Transect)) +
+  geom_boxplot() +
+  facet_wrap(~Isotope, scales = "free_y") +
+  xlab("") +
+  ylab("Ratio Pb Isotopes") +
+  scale_fill_manual(values=c("#b2182b","#ef8a62", "#67a9cf")) +
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=16),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=14)
+  )
+
+ratios_box
+  
+#ggsave("Pb_isotopes_ratio_boxplot_transect.png", dpi = 300, height = 4, width = 9)
+```
+
+
+```{r}
+
+isotopes_ratio2 <- isotopes %>%
+   select(Transect, Pb_206, Pb_207, Pb_208) %>%
+   mutate(Ratio_206 = Pb_206 / Pb_207) %>%
+   mutate(Ratio_208 = Pb_208 / Pb_207) %>% 
+   select(-c(Pb_206, Pb_207, Pb_208))
+
+ratios_scatter <- ggplot(data = isotopes_ratio2,
+                         aes(x = Ratio_208, y = Ratio_206, colour = Transect)) +
+   geom_point(size = 4) +
+   xlab("Pb208 / Pb207") +
+   ylab("Pb206 / Pb207") +
+  scale_color_manual(values=c("#b2182b","#ef8a62", "#67a9cf")) +
+  theme_bw() +
+  geom_text(aes(label = isotopes$Sample), vjust = 1.5) +
+  theme( 
+    axis.title.x = element_text(size=16),
+    axis.text.x  = element_text(size=14),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=14)
+    )
+
+ratios_scatter
+
+#ggsave("Pb_isotopes_ratio_correl.png", dpi = 300, height = 4, width = 8)
+
+```
+
+```{r}
+###Final plot
+
+ratios_final <- ggarrange(ratios_box, ratios_scatter,
+          labels = c("A","C"),
+          nrow = 2,
+          ncol = 1)
+
+ratios_final
+
+#ggsave("Figure S1.png", ratios_final, width = 240, height = 200, units = "mm",dpi = 300)
+
+#ggsave("Figure S1.svg", ratios_final, width = 240, height = 200, units = "mm",dpi = 300)
+
+```
+
+#### Ternary Plots
+
+```{r}
+
+#ggtern(data = isotopes, aes(x=Pb_207, y=Pb_206, z=Pb_208)) +
+ #   geom_point(aes(colour = Transect), size=3)
+ 
+  
+```

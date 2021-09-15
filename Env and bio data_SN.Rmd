@@ -1,0 +1,398 @@
+---
+title: "Erebus analysis of env on bio"
+author: "Stephen Noell"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.align = "center",
+                      fig.width = 10,
+                      fig.height = 6)
+```
+
+
+```{r Libraries and seed}
+
+# Libraries
+library("tidyverse")       # data wrangling and visualisation
+library("phyloseq")        # analysis of microbial communities
+library("vegan")           # ecological multivariate analyses
+
+library("qwraps2")         # quick summary statistics
+options(qwraps2_markup = "markdown") # define document type
+
+library("patchwork")       # plots together
+library("paletteer") #color package
+library("pairwiseAdonis")
+library("microbiome") #for analyzing phyloseq objects
+library("viridis") #color package
+library("svglite") #for saving SVGs
+library("ggpubr") #for saving plots
+library("here")            # set the path to the folder 
+
+set.seed(57)
+```
+
+
+```{r Load the data}
+# Load the final phyloseq object with the correct metadata
+physeq.erebus <- readRDS("erebus")
+
+```
+
+```{r}
+#filter and transform data
+erebusf <- subset_taxa (physeq.erebus, (Kingdom !="Eukaryota")) # we remove Eukaryota and NA
+erebusf <- subset_taxa (erebusf, (Order !="Chloroplast") | is.na(Order)) # we remove Chloroplast but retain NA
+erebusf <- subset_taxa (erebusf, (Family != "Mitochondria") | is.na(Family)) 
+
+erebusf
+
+erebusfr <- microbiome::transform(erebusf, "clr")
+unifrac.erebusfr <- distance(erebusfr, method = "unifrac")
+
+# Subset TR, WC
+
+tr <- erebusfr %>%
+  subset_samples(Site == "Tramway Ridge") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+tr
+
+# TR1
+tr1<- erebusfr %>%
+  subset_samples(Transect == "TR1") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+tr1
+
+# TR2
+tr2<- erebusfr %>%
+  subset_samples(Transect == "TR2") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+tr2
+
+
+# WC
+wc<- erebusfr %>%
+  subset_samples(Transect == "WC") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+wc
+
+
+# Calculate the distance
+unifrac.tr <- distance(tr, method = "unifrac")
+unifrac.tr1 <- distance(tr1, method = "unifrac")
+unifrac.tr2 <- distance(tr2, method = "unifrac")
+unifrac.wc <- distance(wc, method = "unifrac")
+
+```
+
+#### Environmental & Biological data analysis
+```{r}
+
+# With the phyloseq object that was filtered for wrong taxonomy and transformed for relative abundance we performed a PCoA (unifrac distance) that showed TR and WC sites as being separated, but TR1 and TR2 not so much
+
+# Now we will perform a PERMANOVA to see if these groups of sites have different centroids
+# This will be complemented with a Permutation test for homogeneity of multivariate dispersions 
+# -if this doesn't come back significant we cam trust that the PERMANOVA results show
+#differences in data centroids and not in data dispersion
+
+# Create a data frame with the environmental data 
+envdata <- data.frame(sample_data(erebusfr))
+envdata.cn <- envdata %>% 
+  mutate(`C/N` = Carbon / Nitrogen)
+
+envdata.cn_tr <- envdata.cn[envdata.cn$Site != "Western Crater", ]
+envdata.cn_tr1 <- envdata.cn[envdata.cn$Transect != "TR2" & envdata.cn$Transect != "WC", ]
+envdata.cn_tr2 <- envdata.cn[envdata.cn$Transect != "TR1" & envdata.cn$Transect != "WC", ]
+envdata.cn_wc <- envdata.cn[envdata.cn$Transect != "TR2" & envdata.cn$Transect != "TR1", ]
+
+# PERMANOVA on site
+adonis2(unifrac.erebusfr ~ Site, data = envdata)
+disp.site<- betadisper(unifrac.erebusfr, envdata$Site)
+permutest(disp.site)
+
+# PERMANOVA on Transect
+adonis2(unifrac.erebusfr ~ Transect, data = envdata)
+disp.Transect<- betadisper(unifrac.erebusfr, envdata$Transect)
+permutest(disp.Transect)
+
+
+# In both situations we see that PERMANOVA returns a significant result, whereas dispersion doesn't
+# When analysing Transect is the difference significant between all 3 transects? - check with pairwise PERMANOVA
+
+pairwise.adonis(unifrac.erebusfr, sample_data(erebusfr)$Transect)
+
+# We see that WC is different from TR1 and TR2 but TR1 and TR2 are not different between themselves
+
+```
+
+
+```{r}
+
+# We will calculate the correlation between env and bio matrixes with a Mantel test
+
+# Calculate the distance with method "euclidean" for the env data
+euclidean.env<- vegdist(envdata[,4:38], method = "euclidean")
+euclidean.env.tr <- vegdist(envdata.cn_tr[,4:39], method = "euclidean")
+euclidean.env.wc <- vegdist(envdata.cn_wc[,4:39], method = "euclidean")
+
+# use the distance already calculated
+mantel(unifrac.erebusfr, euclidean.env)
+mantel(unifrac.tr, euclidean.env.tr)
+mantel(unifrac.wc, euclidean.env.wc)
+
+# Not significant when we take all the env factors together. Try separately
+
+# Soil - pH, conductivity, moisture
+euclidean.soil<- vegdist(envdata[,c(5,6,9)], method = "euclidean")
+euclidean.soil.tr<- vegdist(envdata.cn_tr[,c(5,6,9)], method = "euclidean")
+euclidean.soil.wc<- vegdist(envdata.cn_wc[,c(5,9,9)], method = "euclidean")
+
+mantel(unifrac.erebusfr, euclidean.soil)
+mantel(unifrac.tr, euclidean.soil.tr)
+mantel(unifrac.wc, euclidean.soil.wc)
+
+#Soil is significant for all 3 transects, but not for tr and wc separately
+#Temp is not sig for TR; pH is
+
+# Nutrients - C, N, P, S
+euclidean.nut<- vegdist(envdata[,c(7,8,16,17)], method = "euclidean")
+euclidean.nut.tr<- vegdist(envdata.cn_tr[,c(7,8)], method = "euclidean")
+euclidean.nut.wc<- vegdist(envdata.cn_wc[,c(16,17)], method = "euclidean")
+
+mantel(unifrac.erebusfr, euclidean.nut)
+mantel(unifrac.tr, euclidean.nut.tr)
+mantel(unifrac.wc, euclidean.nut.wc)
+
+#For TR: all 4 not sig, but C&N alone are, not C:N; nothing sig at WC
+
+# Cations - Ca, Mg, K, Na, Sr, Ba
+euclidean.cat<- vegdist(envdata[,c(10,11,12,13,14,15)], method = "euclidean")
+euclidean.cat.tr<- vegdist(envdata.cn_tr[,c(10,11,12,13,14,15)], method = "euclidean")
+euclidean.cat.wc<- vegdist(envdata.cn_wc[,c(10,11,12,13,14,15)], method = "euclidean")
+
+mantel(unifrac.erebusfr, euclidean.cat)
+mantel(unifrac.tr, euclidean.cat.tr)
+mantel(unifrac.wc, euclidean.cat.wc)
+
+#Sig for all sites, not for WC or TR;
+
+# Metals 
+euclidean.metal<- vegdist(envdata[,c(11,14,18:33)], method = "euclidean")
+euclidean.metal.tr<- vegdist(envdata.cn_tr[,c(11,14,18:33)], method = "euclidean")
+euclidean.metal.wc<- vegdist(envdata.cn_wc[,c(30,27)], method = "euclidean")
+
+mantel(unifrac.erebusfr, euclidean.metal)
+mantel(unifrac.tr, euclidean.metal.tr)
+mantel(unifrac.wc, euclidean.metal.wc)
+
+#not significant for any of them, except Fe, Zn, and Cu for TR
+
+# Normalise with the Al concentration
+normmetals<- envdata %>%
+  select(Sample,Transect,  
+         Na, Mg, K, Ca, Sr, Ba, P, S, Se, Al, 
+         Tl, Pb, B, As, V, Cr, Mn, Fe, Co, Ni, 
+         Cu, Zn, Cd, U) %>% 
+  pivot_longer(!c(Sample, Transect, Al), names_to ="Element", values_to = "values") %>%
+  mutate(norm = values / Al) %>%
+  select(Sample, Transect, Element, norm) %>% 
+  pivot_wider(names_from = "Element", values_from = "norm") %>%
+  column_to_rownames("Sample")
+
+euclidean.cat.norm<- vegdist(normmetals[,2:7], method = "euclidean")
+mantel(unifrac.erebusfr, euclidean.cat.norm)
+
+euclidean.metal.norm<- vegdist(normmetals[,8:21], method = "euclidean")
+mantel(unifrac.erebusfr, euclidean.metal.norm)
+
+# metals get better, but still not significant; cations get worse correlation
+```
+
+```{r}
+# We will inspect the effect of environmental factors with a dbRDA (CAP on phyloseq)
+
+# We will do this from within package vegan (capscale) with function capscale
+
+# Define colours
+colvec <- c("#749dae", "#f3c483", "#5c1a33")
+
+
+# Plot ordinations with arrows for the parameters that were significant on the mantel test
+# final plot; 44.4% and 19.4%
+erebus.cap.f <- capscale(otu_table(erebusfr) ~ pH + Temperature + 
+                           Conductivity + GWC + 
+                         Carbon + Nitrogen + P + S + Fe,
+                       envdata.cn, dist = "euclidean")
+erebus.cap.f
+erebus.cap.f$CCA$eig/erebus.cap.f$tot.chi*100
+
+envdata.cn$Transect <- factor(envdata.cn$Transect)
+
+plot(erebus.cap.f)
+with(envdata.cn, points(erebus.cap.f, display = "sites", col = colvec[Transect],
+                      pch = 21, bg = colvec[Transect]))
+with(envdata.cn, legend("topright", legend = levels(Transect), bty = "n",
+                      col = colvec, pch = 21, pt.bg = colvec))
+
+```
+
+```{r}
+#trying out each transect individually
+#TR alone; 35.7/19.1%
+envdata.cn_tr$Transect <- factor(envdata.cn_tr$Transect)
+
+erebus.cap_tr <- capscale(otu_table(tr) ~ pH +
+                            Carbon + Nitrogen + Fe + Zn + Cu,
+                          envdata.cn_tr, dist = "euclidean")
+erebus.cap_tr
+erebus.cap_tr$CCA$eig/erebus.cap_tr$tot.chi*100
+
+plot(erebus.cap_tr)
+with(envdata.cn_tr, points(erebus.cap_tr, display = "sites", col = colvec[Transect],
+                      pch = 21, bg = colvec[Transect]))
+with(envdata.cn_tr, legend("topright", legend = levels(Transect), bty = "n",
+                      col = colvec, pch = 21, pt.bg = colvec))
+
+```
+
+
+```{r}
+#make final dbrba plots
+erebus.cap.f.df <- as.data.frame(erebus.cap.f$CCA$u)
+erebus.cap_tr.df <- as.data.frame(erebus.cap_tr$CCA$u)
+
+envdata.cn$CAP1 <- erebus.cap.f.df$CAP1
+envdata.cn$CAP2 <- erebus.cap.f.df$CAP2
+
+envdata.cn_tr$CAP1 <- erebus.cap_tr.df$CAP1
+envdata.cn_tr$CAP2 <- erebus.cap_tr.df$CAP2
+
+#info for arrows:
+arrows <- as.data.frame(erebus.cap.f$CCA$biplot)
+arrows_x <- select(arrows, c("CAP1"))
+arrows_y <- select(arrows, c("CAP2"))
+arrows_x <- t(arrows_x)
+arrows_y <- t(arrows_y)
+arrows_x <- as.data.frame(arrows_x)
+arrows_y <- as.data.frame(arrows_y)
+
+arrows_tr <- as.data.frame(erebus.cap_tr$CCA$biplot)
+arrows_tr_x <- select(arrows_tr, c("CAP1"))
+arrows_tr_y <- select(arrows_tr, c("CAP2"))
+arrows_tr_x <- t(arrows_tr_x)
+arrows_tr_y <- t(arrows_tr_y)
+arrows_tr_x <- as.data.frame(arrows_tr_x)
+arrows_tr_y <- as.data.frame(arrows_tr_y)
+
+```
+
+```{r}
+
+###all
+cap_plot_all <- ggplot(envdata.cn, aes(x= CAP1, y= CAP2, color = pH, 
+                                       shape = Site)) + 
+  geom_point(aes(size=4)) +
+  ylab("CAP2 (19.4%)") +
+  xlab("CAP1 (44.4%)") +
+  theme_bw() +
+  #geom_text(aes(label = Sample), nudge_x = 0.05, nudge_y = 0.05) +
+  scale_color_viridis("pH", direction = -1) +
+  geom_hline(yintercept = 0, linetype="dotted") + 
+  geom_vline(xintercept = 0, linetype="dotted") +
+  geom_segment(aes(x = 0.0, y =0.0,xend = arrows_x$pH , 
+                   yend = arrows_y$pH), arrow =arrow(), color = "black") +
+  geom_segment(aes(x = 0.0, y =0.0,xend = arrows_x$Conductivity, 
+                   yend = arrows_y$Conductivity), arrow =arrow(), color = "black") +
+  geom_segment(aes(x = 0.0, y =0.0,xend = arrows_x$GWC, 
+                   yend = arrows_y$GWC), arrow =arrow(), color = "black") +
+  geom_segment(aes(x = 0.0, y =0.0,xend = arrows_x$P, 
+                   yend = arrows_y$P), arrow =arrow(), color = "black") +
+  geom_segment(aes(x = 0.0, y =0.0,xend = arrows_x$Fe, 
+                   yend = arrows_y$Fe), arrow =arrow(), color = "black") +
+  geom_segment(aes(x = 0.0, y =0.0,xend = arrows_x$S, 
+                   yend = arrows_y$S), arrow =arrow(), color = "black") +
+  geom_segment(aes(x = 0.0, y =0.0,xend = arrows_x$Temperature, 
+                   yend = arrows_y$Temperature), arrow =arrow(), color = "black") +
+  geom_segment(aes(x = 0.0, y =0.0,xend = arrows_x$Carbon, 
+                   yend = arrows_y$Carbon), arrow =arrow(), color = "black") +
+    geom_segment(aes(x = 0.0, y =0.0,xend = arrows_x$Nitrogen, 
+                   yend = arrows_y$Nitrogen), arrow =arrow(), color = "black") +
+  geom_text(label = "pH", x = arrows_x$pH, y = arrows_y$pH) +
+    geom_text(label = "Conductivity", x = arrows_x$Conductivity, y = arrows_y$Conductivity) +
+    geom_text(label = "GWC", x = arrows_x$GWC, y = arrows_y$GWC) +
+    geom_text(label = "P", x = arrows_x$P, y = arrows_y$P) +
+    geom_text(label = "S", x = arrows_x$S, y = arrows_y$S) +
+    geom_text(label = "Fe", x = arrows_x$Fe, y = arrows_y$Fe) +
+    geom_text(label = "C", x = arrows_x$Carbon, y = arrows_y$Carbon) +
+      geom_text(label = "N", x = arrows_x$Nitrogen, y = arrows_y$Nitrogen) +
+    geom_text(label = "Temperature", x = arrows_x$Temperature, 
+              y = arrows_y$Temperature) +
+  theme(
+    axis.title.x = element_text(size=16),
+    axis.text.x = element_text(size=12),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=12),
+    strip.text = element_text(size=14),
+    strip.background = element_blank(),
+    legend.title = element_text(size=16),
+    legend.text = element_text(size=16)) +
+  guides(size = "none", shape = guide_legend(override.aes = list(size = 4)))
+
+cap_plot_all
+
+###TR
+cap_plot_tr <- ggplot(envdata.cn_tr, aes(x= CAP1, y= CAP2, color = pH, 
+                                       shape = Transect)) + 
+  geom_point(aes(size=4)) +
+  ylab("CAP2 (19.1%)") +
+  xlab("CAP1 (35.7%)") +
+  theme_bw() +
+  #geom_text(aes(label = Sample), nudge_x = 0.05, nudge_y = 0.05) +
+  scale_color_viridis("pH", direction = -1) +
+  geom_hline(yintercept = 0, linetype="dotted") + 
+  geom_vline(xintercept = 0, linetype="dotted") +
+  geom_segment(aes(x = 0.0, y =0.0,xend = arrows_tr_x$pH, 
+                   yend = arrows_tr_y$pH), arrow =arrow(), color = "black") +
+  geom_segment(aes(x = 0.0, y =0.0,xend = arrows_tr_x$Fe, 
+                   yend = arrows_tr_y$Fe), arrow =arrow(), color = "black") +
+    geom_segment(aes(x = 0.0, y =0.0,xend = arrows_tr_x$Carbon, 
+                   yend = arrows_tr_y$Carbon), arrow =arrow(), color = "black") +
+    geom_segment(aes(x = 0.0, y =0.0,xend = arrows_tr_x$Nitrogen, 
+                   yend = arrows_tr_y$Nitrogen), arrow =arrow(), color = "black") +
+      geom_segment(aes(x = 0.0, y =0.0,xend = arrows_tr_x$Zn, 
+                   yend = arrows_tr_y$Zn), arrow =arrow(), color = "black") +
+      geom_segment(aes(x = 0.0, y =0.0,xend = arrows_tr_x$Cu, 
+                   yend = arrows_tr_y$Cu), arrow =arrow(), color = "black") +
+    geom_text(label = "pH", x = arrows_tr_x$pH, y = arrows_tr_y$pH) +
+      geom_text(label = "C", x = arrows_tr_x$Carbon, y = arrows_tr_y$Carbon) +
+      geom_text(label = "N", x = arrows_tr_x$Nitrogen, y = arrows_tr_y$Nitrogen) +
+    geom_text(label = "Fe", x = arrows_tr_x$Fe, y = arrows_tr_y$Fe) +
+      geom_text(label = "Zn", x = arrows_tr_x$Zn, y = arrows_tr_y$Zn) +
+      geom_text(label = "Cu", x = arrows_tr_x$Cu, y = arrows_tr_y$Cu) +
+  theme(
+    axis.title.x = element_text(size=16),
+    axis.text.x = element_text(size=12),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=12),
+    strip.text = element_text(size=14),
+    strip.background = element_blank(),
+    legend.title = element_text(size=16),
+    legend.text = element_text(size=16)) +
+  guides(size = "none", shape = guide_legend(override.aes = list(size = 4)))
+
+cap_plot_tr
+
+
+#ggsave("Figure 2E.png", cap_plot_all, width = 240, height = 90, units = "mm", dpi = 300)
+
+#ggsave("Figure 2E.svg", cap_plot_all, width = 240, height = 90, units = "mm", dpi = 300)
+
+#ggsave("Figure 3E.png", cap_plot_tr, width = 240, height = 90, units = "mm", dpi = 300)
+
+#ggsave("Figure 3E.svg", cap_plot_tr, width = 240, height = 90, units = "mm", dpi = 300)
+```
+

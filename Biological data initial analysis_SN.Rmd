@@ -1,0 +1,565 @@
+---
+title: "Erebus bio data analysis"
+author: "Mafalda S. Baptista"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.align = "center",
+                      fig.width = 10,
+                      fig.height = 6)
+```
+
+
+```{r Libraries and seed}
+
+# Libraries
+library("tidyverse")       # data wrangling and visualisation
+library("phyloseq")        # analysis of microbial communities
+library("vegan")           # ecological multivariate analyses
+
+library("qwraps2")         # quick summary statistics
+options(qwraps2_markup = "markdown") # define document type
+
+library("patchwork")       # plots together
+library("paletteer") #color package
+library("pairwiseAdonis")
+library("microbiome") #for analyzing phyloseq objects
+library("viridis") #color package
+library("svglite") #for saving SVGs
+library("ggpubr") #for saving plots
+library("here")            # set the path to the folder 
+
+set.seed(57)
+```
+
+
+```{r Load the data}
+# Load the final phyloseq object with the correct metadata
+physeq.erebus <- readRDS("erebus")
+
+```
+
+### Sequences and ASVs data
+
+```{r ASVs and reads statistics}
+
+# Inspect number of reads and ASVs
+
+colSums.asv.df <- data.frame(colSums(otu_table(physeq.erebus))) %>%
+  rownames_to_column("ASV")
+
+plot_asvs <- ggplot(colSums.asv.df, aes(x = reorder(ASV, -colSums.otu_table.physeq.erebus..), y = colSums.otu_table.physeq.erebus..)) + 
+  geom_bar(stat = "identity") +
+  ylab("ASVs") +
+  xlab("") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()
+    )
+
+# Inspect number of sequences
+
+rowSums.asv.df <- data.frame(rowSums(otu_table(physeq.erebus))) %>%
+  rownames_to_column("Samples")
+
+plot_reads <- ggplot(rowSums.asv.df, aes(x = reorder(Samples, -rowSums.otu_table.physeq.erebus..), y =
+               rowSums.otu_table.physeq.erebus..)) +
+  geom_bar(stat = "identity") + 
+  coord_flip() +
+  ylab("Reads") +
+  xlab("")
+
+plot_asvs | plot_reads
+
+summary1 <-
+  list("ASVs" = 
+         list("min" = ~ min(colSums.otu_table.physeq.erebus..),
+            "median" = ~ median(colSums.otu_table.physeq.erebus..),
+            "max"  = ~ max(colSums.otu_table.physeq.erebus..))
+            )
+
+summary_table(colSums.asv.df, summary1)
+
+summary2 <-
+  list("Reads" = 
+         list("min" = ~ min(rowSums.otu_table.physeq.erebus..),
+            "median" = ~ median(rowSums.otu_table.physeq.erebus..),
+            "max"  = ~ max(rowSums.otu_table.physeq.erebus..))
+            )
+
+summary_table(rowSums.asv.df, summary2)
+```
+
+The number of reads varied between 34069 and 2803, with a median value of 27685. Due to the difference between maximum and minimum values we inspected the sequence distribution in each transect separately.
+
+```{r ASVs and reads statistics in each transect}
+
+# Subset TR1, TR2, WC
+
+# TR1
+tr1<- physeq.erebus %>%
+  subset_samples(Transect == "TR1") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+tr1
+
+# TR2
+tr2<- physeq.erebus %>%
+  subset_samples(Transect == "TR2") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+tr2
+
+# WC
+wc<- physeq.erebus %>%
+  subset_samples(Transect == "WC") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+wc
+
+
+# Create data frames
+
+rowSums.asv.df.tr1 <- data.frame(rowSums(otu_table(tr1))) %>%
+  rownames_to_column("Samples")
+
+rowSums.asv.df.tr2 <- data.frame(rowSums(otu_table(tr2))) %>%
+  rownames_to_column("Samples")
+
+rowSums.asv.df.wc <- data.frame(rowSums(otu_table(wc))) %>%
+  rownames_to_column("Samples")
+
+
+# Summary
+
+summarytr1 <-
+  list("TR1" = 
+         list("min" = ~ min(rowSums.otu_table.tr1..),
+            "median" = ~ median(rowSums.otu_table.tr1..),
+            "max"  = ~ max(rowSums.otu_table.tr1..))
+            )
+
+summary_table(rowSums.asv.df.tr1, summarytr1)
+
+summarytr2 <-
+  list("TR1" = 
+         list("min" = ~ min(rowSums.otu_table.tr2..),
+            "median" = ~ median(rowSums.otu_table.tr2..),
+            "max"  = ~ max(rowSums.otu_table.tr2..))
+            )
+
+summary_table(rowSums.asv.df.tr2, summarytr2)
+
+
+summarywc <-
+  list("TR1" = 
+         list("min" = ~ min(rowSums.otu_table.wc..),
+            "median" = ~ median(rowSums.otu_table.wc..),
+            "max"  = ~ max(rowSums.otu_table.wc..))
+            )
+
+summary_table(rowSums.asv.df.wc, summarywc)
+
+
+plot_reads <- ggplot(rowSums.asv.df, aes(x = reorder(Samples, -rowSums.otu_table.physeq.erebus..), y =
+               rowSums.otu_table.physeq.erebus..)) +
+  geom_bar(stat = "identity") + 
+  coord_flip() +
+  ylab("Reads") +
+  xlab("")
+
+Sites<- c("TR2", "TR1", "TR1", "TR1", "TR1", "TR2", "TR2", "TR2", "WC", "WC", "WC", "WC", "WC", "WC")
+rowSums.asv.df$Site <-Sites
+
+plot_box_read <- ggplot(rowSums.asv.df, aes(fill =Site, x = Site, 
+                                            y = rowSums.otu_table.physeq.erebus..)) +
+  geom_boxplot() +
+  xlab("Transect") +
+  ylab("Reads") +
+  scale_fill_manual(values=c("#b2182b","#ef8a62", "#67a9cf")) +
+  theme_bw() +
+  theme(
+    strip.background = element_blank(),
+    axis.title.x = element_blank (),
+    axis.text.x  = element_text(size=16),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=14),
+    legend.position = "none"
+  )
+
+
+
+plot_box_read
+
+```
+
+Comparing the median and range of reads for TR1 24343 (2803 - 34069), TR2 30708 (4476 - 30992) and WC 24941 (3086 - 322815) we can see that every transect shows one sample with lower reads. We will check with filtering if we can retain these samples or not. <br>
+
+### Filtering by taxonomy
+
+```{r Filter by taxonomy}
+
+# Filter by taxonomy 
+
+# This taxonomy was obtained with the baysean classifier in DADA2 pipeline using SILVA 138 database
+
+# Show available ranks in the dataset
+rank_names(physeq.erebus)
+
+ # How many domains? (Kingdom in the taxonomy table)
+table(tax_table(physeq.erebus)[, "Kingdom"], exclude = NULL) 
+
+# How many Phyla?
+table(tax_table(physeq.erebus)[, "Phylum"], exclude = NULL) 
+
+# We have a high number of NA Phylum 
+
+# Remove known erroneous assignments
+
+erebusf <- subset_taxa (physeq.erebus, (Kingdom !="Eukaryota")) # we remove Eukaryota and NA
+erebusf <- subset_taxa (erebusf, (Order !="Chloroplast") | is.na(Order)) # we remove Chloroplast but retain NA
+erebusf <- subset_taxa (erebusf, (Family != "Mitochondria") | is.na(Family)) 
+
+erebusf 
+
+# Removing NA Phyla is a common filtering strategy because for such a high taxonomic level it should be possible to derive an affiliation
+# However, since we know that our data set might contain a high number of ASVs not reported in the literature this filtering strategy may not apply
+# We will check the prevalence of NA at the Phylum level
+
+
+# Compute prevalence of each ASV
+prevdf <- apply(X = otu_table(erebusf),
+               MARGIN = ifelse(taxa_are_rows(erebusf), yes = 1, no = 2),
+               FUN = function(x){sum(x > 0)})
+
+# Add taxonomy and total read counts to this
+prevdf <- data.frame(Prevalence = prevdf,
+                    TotalAbundance = taxa_sums(erebusf),
+                    tax_table(erebusf))
+
+# Plot prevalence
+prevdf1 <- subset(prevdf, Phylum %in% get_taxa_unique(erebusf, "Phylum"))
+ggplot(prevdf, aes(TotalAbundance, Prevalence / nsamples(erebusf), color = Phylum)) + 
+  geom_point(size = 2, alpha = 0.7) +
+  scale_x_log10() +
+  xlab("Total Abundance") + 
+  ylab("Prevalence [Frac. Samples]") +
+  facet_wrap(~Phylum) + theme(legend.position="none")
+
+```
+
+It looks like we loose very abundant ASVs if we filter all the NA Phyla, so for now we will retain this information until we check the similarity of the sampling sites with an ordination.
+
+### Filtering by ASVs
+
+```{r Filter by ASVs}
+
+# As seen before the minimum number of reads for a given ASV in the DADA2 pipeline is 2.
+# Removing these ASVs is a common filtering strategy - they may be a sequencing artifact
+
+# How many ASVs fit this?
+colSums.asv.df.2<- colSums.asv.df %>%
+  filter(colSums.otu_table.physeq.erebus.. < 3)
+
+# Inspect if filtering these ASVs helps to relate one sample to the other (check with a PCoA ordination)
+
+```
+
+
+### Filtering strategies
+
+```{r Filter strategies}
+# Remove ASVs that do not appear more than 2 times 
+seq_flt <- genefilter_sample(erebusf, filterfun_sample(function(x) x > 2))
+
+erebusf2 <- prune_taxa(seq_flt, erebusf) 
+erebusf2
+
+# Filter NA Phylum
+erebusfna <- subset_taxa (erebusf, (Phylum !="NA")) 
+erebusfna
+
+# Combine both filtering strategies
+
+seq_flt_na <- genefilter_sample(erebusfna, filterfun_sample(function(x) x > 2))
+
+erebusfna2 <- prune_taxa(seq_flt_na, erebusfna) #805 ASVs
+erebusfna2
+
+```
+
+
+```{r Normalise}
+
+# Transform data using centered log ratio (clr)
+erebusfr <- microbiome::transform(erebusf, "clr")
+
+erebusfnar<- microbiome::transform(erebusfna, "clr")
+
+erebusf2r<- microbiome::transform(erebusf2, "clr")
+
+erebusfna2r<- microbiome::transform(erebusfna2, "clr")
+
+```
+
+
+```{r Distance}
+
+# Calculate the distance
+unifrac.erebusfr <- distance(erebusfr, method = "unifrac")
+
+unifrac.erebusfnar <- distance(erebusfnar, method = "unifrac")
+
+unifrac.erebusf2r <- distance(erebusf2r, method = "unifrac")
+
+unifrac.erebusfna2r <- distance(erebusfna2r, method = "unifrac")
+
+```
+
+
+```{r PCoA Ordination}
+
+# Get the PCoA ordination
+erebusfr.mds <- ordinate(erebusfr, "MDS", distance = unifrac.erebusfr)
+
+erebusfnar.mds <- ordinate(erebusfnar, "MDS", distance = unifrac.erebusfnar)
+
+erebusf2r.mds <- ordinate(erebusf2r, "MDS", distance = unifrac.erebusf2r)
+
+erebusfna2r.mds <- ordinate(erebusfna2r, "MDS", distance = unifrac.erebusfna2r)
+
+
+# Plot
+
+pcoa.erebusfr<- plot_ordination(erebusfr, erebusfr.mds, 
+                color="Transect", shape = "Site", label= "Sample") +
+  geom_point(size=2) +
+  labs(title = "Filter wrong taxonomy",
+         tag = "PCoA with unifrac distance")
+
+pcoa.erebusfnar<- plot_ordination(erebusfnar, erebusfnar.mds, 
+                color="Transect", shape = "Site", label= "Sample") +
+  geom_point(size=2) +
+  labs(title = "Filter wrong taxonomy & NA Phyla")
+  
+pcoa.erebusf2r<- plot_ordination(erebusf2r, erebusf2r.mds, 
+                color="Transect", shape = "Site", label= "Sample") +
+  geom_point(size=2) +
+  labs(title = "Filter wrong taxonomy & ASVs < 2")
+
+pcoa.erebusfna2r<- plot_ordination(erebusfna2r, erebusfna2r.mds, 
+                color="Transect", shape = "Site", label= "Sample") +
+  geom_point(size=2) +
+  labs(title = "Filter wrong taxonomy & NA Phyla \n& ASVs < 2")
+
+
+(pcoa.erebusfr + pcoa.erebusfnar) / (pcoa.erebusf2r + pcoa.erebusfna2r)
+```
+
+
+The ordination explains slightly more variation as we remove ASVs < 2 and NA Phyla but it is not a huge gain. The separation along Axis.1 is very clear for both sampling sites TR and WC. Looking at the environmental data the difference in pH values is the first thing that catches the eye, with TR acidic and WC neutral and basic.
+The separation along Axis.2 seems to be related with the number of reads obtained for each sample, specifically those with lower numbers (TR152, TR234, WC20). Let's check the rarefaction curves to get a better idea of what is hapenning with these samples and then try the ordination without them.<br>
+
+```{r Rarefaction curves}
+
+rarecurve(otu_table(erebusf), step = 100, 10000, lwd=2, ylab="ASVs")
+
+```
+
+Function rarecurve draws a rarefaction curve for each row of the input data. Specifying sample size = 10000 horizontal lines are drawn for the rarefied species richnesses. We have good agreement for all the samples except TR152, TR234, WC20. For WC20 the initial very low DNA concentration (< 0.5 ng/µL) can help explain these results. For sample TR152 and TR234 the critically low number of reads obtained after sequencing could help explain these results. Inspect beta diversity without these samples. <br>
+ 
+```{r Removing samples with low number of reads}
+
+# Select the samples of interest
+erebusfi <- subset_samples(erebusf, Sample != "TR152" & Sample != "TR234" & Sample != "WC20")
+erebusfi
+
+# Transform the data to relative abundance
+erebusfir<- transform_sample_counts(erebusfi, function(x) x / sum(x) ) 
+
+# Calculate the distance
+unifrac.erebusfir <- distance(erebusfir, method = "unifrac")
+
+# Get the PCoA ordination
+erebusfir.mds <- ordinate(erebusfir, "MDS", distance = unifrac.erebusfir)
+
+# Plot
+
+pcoa.erebusfir<- plot_ordination(erebusfir, erebusfir.mds, 
+                color="Transect", shape = "Site", label= "Sample") +
+    geom_point(size = 3) +
+  scale_color_manual(values=c("#b2182b","#ef8a62", "#67a9cf")) +
+  theme_bw() +
+  theme( 
+    axis.title.x = element_text(size=16),
+    axis.text.x  = element_text(size=14),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=14)
+    )
+
+pcoa.erebusfr2 | pcoa.erebusfir
+```
+
+The variance explained by Axis.2 is only marginally better, and still TR sites are not grouped by temperature. We keep all sampling sites.
+
+```{r}
+###Final sup. fig to explain keeping all samples
+sup_fig_reads <- ggarrange(plot_reads, plot_box_read, pcoa.erebusfr2, pcoa.erebusfir,
+          labels = c("A","B","C","D"),
+          nrow = 2,
+          ncol = 2
+          )
+sup_fig_reads
+
+#ggsave("Figure S3.png", sup_fig_reads, width = 240, height = 120, units = "mm",dpi = 300)
+
+#ggsave("Figure S3.svg", sup_fig_reads, width = 240, height = 160, units = "mm",dpi = 300)
+
+```
+
+```{R}
+# final plot
+pcoa.erebusfr<- plot_ordination(erebusfr, erebusfr.mds, 
+                color="pH", shape = "Transect") +
+  geom_point(size=5) +
+  #geom_text(label = rownames(erebusfr.mds$vectors),
+   #         nudge_x = 0.01, nudge_y = 0.01, 
+    #        check_overlap = T) +
+  scale_color_viridis("pH", direction = -1) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_text (size=16),
+    axis.text.x  = element_text(size=16),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=16),
+    strip.text = element_text(size=16),
+    strip.background = element_blank(),
+    legend.text = element_text(size=14),
+    legend.title = element_text(size=14)) +
+  labs(y="PCoA2 (13.2%)", x="PCoA1 (33.1%)",
+       shape = "Transect")
+
+pcoa.erebusfr
+
+###Final PCOA plot of biological data of samples
+#ggsave("Figure S2C.png", plot = pcoa.erebusfr, width = 120, height = 90, units = "mm",dpi = 300)
+
+#ggsave("Figure S2C.svg", plot = pcoa.erebusfr, width = 120, height = 90, units = "mm",dpi = 300)
+
+```
+
+
+```{r Inspecting ordinations for each site separately}
+
+# Subset TR, WC
+
+tr <- erebusfr %>%
+  subset_samples(Site == "Tramway Ridge") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+tr
+
+# TR1
+tr1<- erebusfr %>%
+  subset_samples(Transect == "TR1") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+tr1
+
+# TR2
+tr2<- erebusfr %>%
+  subset_samples(Transect == "TR2") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+tr2
+
+
+# WC
+wc<- erebusfr %>%
+  subset_samples(Transect == "WC") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+wc
+
+
+# Calculate the distance
+unifrac.tr <- distance(tr, method = "unifrac")
+unifrac.tr1 <- distance(tr1, method = "unifrac")
+unifrac.tr2 <- distance(tr2, method = "unifrac")
+unifrac.wc <- distance(wc, method = "unifrac")
+
+
+# Get the PCoA ordination
+tr1.mds <- ordinate(tr1, "MDS", distance = unifrac.tr1)
+tr2.mds <- ordinate(tr2, "MDS", distance = unifrac.tr2)
+wc.mds <- ordinate(wc, "MDS", distance = unifrac.wc)
+
+# Plot
+
+pcoa.tr1<- plot_ordination(tr1, tr1.mds, 
+                color="pH", label= "Sample") +
+  geom_point(size=2)
+
+pcoa.tr2<- plot_ordination(tr2, tr2.mds, 
+                color="pH", label= "Sample") +
+  geom_point(size=2)
+
+pcoa.wc<- plot_ordination(wc, wc.mds, 
+                color="pH", label= "Sample") +
+  geom_point(size=2)
+
+pcoa.tr1 | pcoa.tr2 | pcoa.wc
+
+```
+
+We will use a conservative approach in the filtering and retain all the samples. The ordination does not explain more variation when we don't use low reads samples, it also does not explain more variation when we filter low abundance ASVs or when we filter Phyla without an assigned taxonomy. <br>
+
+```{r Inspect taxonomy }
+
+# With physeq that was filtered for erroneous taxa and transformed to rel abund - erebusfr
+
+# Transform the physeq object into long format for the purpose of plotting
+erebus_p <- erebusfr %>% psmelt() 
+
+# We don't need all the env data for this, so lets get the col names and select what we want
+colnames(erebus_p)
+
+erebus_p <- erebus_p %>%
+  select(OTU, Sample, Abundance,  Site, Transect, Temperature, pH, Kingdom, Phylum, Class, Order, Family, Genus)
+# I retained all the taxonomy in case you want to cahnge the code and inspect other levels
+
+
+# For Tramway Ridge sites the Rel Abundance of Archaea varied from 13 % to 57 %
+# For Western Crater sites the Rel Abundance of Archaea varied from 0.5 % to 7 %
+# In any case Archaea is generally higher than in most environments
+
+# To show NA on our data we must first create a label "NA"
+erebus_p_na<- erebus_p %>%
+  mutate_at("Phylum", ~str_replace_na(., "NA")) %>% # if taxonomy is NA then write "NA"
+  filter(Abundance > 0.01) # we will also filter Rel Abund > 1%, otherwise the plot gets too difficult to read (even like this gets too difficult to read...)
+
+# Now lets check how many Phyla we have
+unique(erebus_p_na$Phylum)
+
+# And create a colour palette with the appropriate number of coulors
+paletteer_c("scico::batlow", n = 17)
+
+pal_man <- c("#001959FF", "#08295BFF", "#0E3A5EFF", "#154B60FF", "#225B60FF", "#366858FF", 
+             "#4D724CFF", "#65793FFF", "#808133FF", "#9D892EFF", "#BF8F38FF", "#808080",
+             "#DE9651FF", "#F49E71FF", "#FCA994FF", "#FDB4B5FF", "#FCC0D7FF", "#F9CCF9FF")
+
+# Since we want to highlight NAs in our data we choose grey #808080 to discriminate
+
+# For Western Crater sites the Rel Abundance of NA was quite high for some sites. Interestingly the site with lowest number of reads WC20 doesn't show NA and the site WC40, also with low number of reads, shows the lowest Rel Abund of NA - this NA result might be because the reads are low
+
+
+# How are those NA placed in the phylogenetic tree?
+
+# Subset WC from the phyloseq object
+wcr<- erebusfr %>%
+  subset_samples(Site == "Western Crater") %>%
+  prune_taxa(taxa_sums(.) > 0, .) 
+
+plot_tree(wcr, ladderize="left", color="Phylum")
+
+# We can see that the NA reads are scattered through the Phyla, which means that probably they belong to a known Phylum but the sequence is not in the database and therefore was not assigned
+# Note that this tree in phyloseq is not an appropriate way of showing phylogeny, it is just a quick check
+
+```

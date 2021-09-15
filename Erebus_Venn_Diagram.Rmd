@@ -1,0 +1,548 @@
+---
+title: "Erebus Venn Diagram"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning=FALSE,
+                      fig.align = "center",
+                      fig.width = 10,
+                      fig.height = 6)
+```
+
+
+```{r Libraries and seed}
+
+# Libraries
+library("tidyverse")       # data wrangling and visualisation
+library("phyloseq")        # analysis of microbial communities
+library("here")            # set the path to the folder 
+library(VennDiagram)
+library(RColorBrewer) #color palettes
+library(UpSetR) #alternative to venns
+
+set.seed(57)
+```
+
+
+```{r}
+# Load the data
+
+# From the drive folder Seqs Analysis
+physeq.erebus <- readRDS("physeq.erebus")
+
+new.names <- paste0("ASV_", seq(ntaxa(physeq.erebus))) # define new names ASV_1, ASV_2, ...
+seqs <- taxa_names(physeq.erebus) # store sequences
+names(seqs) <- new.names # make map from ASV to full sequence
+taxa_names(physeq.erebus) <- new.names # rename 
+
+```
+
+```{r}
+# Remove known erroneous assignments
+
+erebusf <- subset_taxa (physeq.erebus, (Kingdom !="Eukaryota")) # we remove Eukaryota and NA
+erebusf <- subset_taxa (erebusf, (Order !="Chloroplast") | is.na(Order)) # we remove Chloroplast but retain NA
+erebusf <- subset_taxa (erebusf, (Family != "Mitochondria") | is.na(Family)) 
+
+erebusf 
+```
+
+```{r ASVs table for each sub site}
+
+# Subset TR1, TR2, WC
+
+# TR1
+tr1<- erebusf %>%
+  subset_samples(sub_site == "TR1") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+print(tr1)
+
+
+# TR2
+tr2<- erebusf %>%
+  subset_samples(sub_site == "TR2") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+print(tr2)
+
+
+# WC
+wc<- erebusf %>%
+  subset_samples(sub_site == "WC") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+print(wc)
+
+```
+
+
+```{r Venn diagram with ASVs for each location}
+
+asv_tr1 <- data.frame(t(otu_table(tr1))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set1 <- paste(asv_tr1$rowname, sep="")
+
+asv_tr2 <- data.frame(t(otu_table(tr2))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set2 <- paste(asv_tr2$rowname, sep="")
+
+asv_wc <- data.frame(t(otu_table(wc))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set3 <- paste(asv_wc$rowname, sep="")
+
+venn.diagram(
+  x = list(set1, set2, set3),
+  category.names = c("Tramway Ridge 1", "Tramway Ridge 2", "Western Crater"),
+  filename = "venn_diagramm_Erebus.png",
+  output=TRUE
+)
+
+# The output is available as a .png file in your current working directory 
+
+# Prepare a palette of 3 colors with R colorbrewer:
+myCol <- brewer.pal(3, "Pastel2")
+
+
+venn.diagram(
+  x = list(set1, set2, set3),
+  category.names = c("Tramway Ridge 1", "Tramway Ridge 2", "Western Crater"),
+  filename = "venn_diagramm_Erebus.png",
+  output=TRUE,
+
+        # Output features
+        imagetype="png" ,
+        height = 480 , 
+        width = 480 , 
+        resolution = 300,
+        compression = "lzw",
+        
+        # Circles
+        lwd = 2,
+        lty = 'blank',
+        fill = myCol,
+        
+        # Numbers
+        cex = .6,
+        fontface = "bold",
+        fontfamily = "sans",
+        
+        # Set names
+        cat.cex = 0.35,
+        cat.fontface = "bold",
+        cat.default.pos = "outer",
+        cat.pos = c(-27, 27, 135),
+        cat.dist = c(0.055, 0.055, 0.085),
+        cat.fontfamily = "sans",
+        rotation = 1
+)
+
+```
+
+
+```{r UpSet plot with ASVs for each location}
+
+# UpsetR
+# https://www.r-graph-gallery.com/upset-plot.html
+
+updata <- c(
+  "TR1" = 120,
+  "TR2" = 187,
+  "WC" = 526,
+  "TR1&TR2" = 116,
+  "TR1&WC" = 17,
+  "TR2&WC" = 7,
+  "TR1&TR2&WC" = 45
+)
+
+
+# With colours
+
+# http://research.libd.org/rstatsclub/post/hacking-our-way-through-upsetr/
+upset(fromExpression(updata), 
+      sets = c("TR1", "TR2", "WC"), 
+      order.by = "degree", 
+      matrix.color = "#E7B800",
+      point.size = 5,
+      sets.bar.color=c("#00A087FF","#4DBBD5FF","#E64B35FF") 
+      )
+
+```
+
+
+```{r Venn diagram with ASVs < 2 for each location}
+
+# Venn Diagram without ASVs < 2
+
+seq_flt_na <- genefilter_sample(erebusf, filterfun_sample(function(x) x > 2))
+erebusf2 <- prune_taxa(seq_flt_na, erebusf)
+erebusf2
+
+# Subset TR1, TR2, WC
+
+# TR1
+tr12<- erebusf2 %>%
+  subset_samples(sub_site == "TR1") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+print(tr12)
+
+
+# TR2
+tr22<- erebusf2 %>%
+  subset_samples(sub_site == "TR2") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+print(tr22)
+
+
+# WC
+wc2<- erebusf2 %>%
+  subset_samples(sub_site == "WC") %>%
+  prune_taxa(taxa_sums(.) > 0, .)
+print(wc2)
+
+
+asv_tr12 <- data.frame(t(otu_table(tr12))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set1 <- paste(asv_tr12$rowname, sep="")
+
+asv_tr22 <- data.frame(t(otu_table(tr22))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set2 <- paste(asv_tr22$rowname, sep="")
+
+asv_wc2 <- data.frame(t(otu_table(wc2))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set3 <- paste(asv_wc2$rowname, sep="")
+
+# Make sure you saved the previous figure of the Venn Diagram with another name, otherwise ths will overwrite
+
+venn.diagram(
+  x = list(set1, set2, set3),
+  category.names = c("Tramway Ridge 1", "Tramway Ridge 2", "Western Crater"),
+  filename = "venn_diagramm_Erebus.png",
+  output=TRUE,
+
+        # Output features
+        imagetype="png" ,
+        height = 480 , 
+        width = 480 , 
+        resolution = 300,
+        compression = "lzw",
+        
+        # Circles
+        lwd = 2,
+        lty = 'blank',
+        fill = myCol,
+        
+        # Numbers
+        cex = .6,
+        fontface = "bold",
+        fontfamily = "sans",
+        
+        # Set names
+        cat.cex = 0.35,
+        cat.fontface = "bold",
+        cat.default.pos = "outer",
+        cat.pos = c(-27, 27, 135),
+        cat.dist = c(0.055, 0.055, 0.085),
+        cat.fontfamily = "sans",
+        rotation = 1
+)
+
+```
+
+
+```{r Which ASVs for each location}
+
+# https://gist.github.com/jamespaultg/47b0cc027038a499a8b064182a37713a
+
+input = list(TR1 = unique(set1),
+             TR2 = unique(set2),
+             WC = unique(set3))
+
+# View VennDiagram with the internal binary group labels
+venn(input, show.plot=FALSE)
+# the various overlapping areas are called intersections
+groupcount <- venn(input, show.plot=FALSE)
+# view the ASVs in various intersections
+print(groupcount) 
+
+# List the ASVs which are common in all the sets - choose the corresponding intersection
+print("ASVs common in all the sets :")
+attr(groupcount, "intersections")$`TR1:TR2:WC`
+
+# Get the number of ASVs per intersection
+print("number of ASVs per intersection :")
+sapply(attr(groupcount, "intersections"),length)
+
+# View which ASV belongs to which intersection
+
+print("List of ASVs with their corresponding intersection :")
+asvs = attr(groupcount, "intersections")
+
+asvs.df<- data.frame(Pattern = rep(names(asvs), sapply(asvs,length)), ASVID = unlist(asvs)) 
+```
+
+
+```{r Venn diagram with ASVs < 2 for Temperature}
+
+# Subset by temperature - using physeq object erebusf2 (trimmed ASVs < 2)
+
+# hist(sample_data(erebusf2)$Temperature)
+
+# Transform Temperature into categorical data
+sample_data(erebusf2)$Temperature <- cut(sample_data(erebusf2)$temperature, c(0,30,40,50,70))
+
+
+# Subset Temperature - all sites together
+
+# T40
+t40<- erebusf2 %>%
+  subset_samples(Temperature == "(30,40]") %>% # 435 taxa
+  prune_taxa(taxa_sums(.) > 0, .)
+
+
+# T50
+t50<- erebusf2 %>%
+  subset_samples(Temperature == "(40,50]") %>% # 417 taxa
+  prune_taxa(taxa_sums(.) > 0, .)
+
+
+# T70
+t70<- erebusf2 %>%
+  subset_samples(Temperature == "(50,70]") %>% # 217 taxa
+  prune_taxa(taxa_sums(.) > 0, .)
+
+####
+asv_t40 <- data.frame(t(otu_table(t40))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set1 <- paste(asv_t40$rowname, sep="")
+
+asv_t50 <- data.frame(t(otu_table(t50))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set2 <- paste(asv_t50$rowname, sep="")
+
+asv_t70 <- data.frame(t(otu_table(t70))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set3 <- paste(asv_t70$rowname, sep="")
+
+```
+
+
+```{r}
+
+venn.diagram(
+  x = list(set1, set2, set3),
+  category.names = c("T < 40", "T < 50", "T < 70"),
+  filename = "venn_diagramm_Erebus_temp.png",
+  output=TRUE,
+
+        # Output features
+        imagetype="png" ,
+        height = 480 , 
+        width = 480 , 
+        resolution = 300,
+        compression = "lzw",
+        
+        # Circles
+        lwd = 2,
+        lty = 'blank',
+        fill = myCol,
+        
+        # Numbers
+        cex = .6,
+        fontface = "bold",
+        fontfamily = "sans",
+        
+        # Set names
+        cat.cex = 0.35,
+        cat.fontface = "bold",
+        cat.default.pos = "outer",
+        cat.pos = c(-27, 27, 135),
+        cat.dist = c(0.055, 0.055, 0.085),
+        cat.fontfamily = "sans",
+        rotation = 1
+)
+
+input = list(T40 = unique(set1),
+             T50 = unique(set2),
+             T70 = unique(set3))
+
+# View VennDiagram with the internal binary group labels
+venn(input, show.plot=FALSE)
+# the various overlapping areas are called intersections
+groupcount <- venn(input, show.plot=FALSE)
+# view the ASVs in various intersections
+print(groupcount)
+```
+
+
+```{r}
+updata <- c(
+  "T40" = 171,
+  "T50" = 143,
+  "T70" = 81,
+  "T40&T50" = 149,
+  "T40&T70" = 15,
+  "T50&T70" = 25,
+  "T40&T50&T70" = 82
+)
+
+#pdf(file="Upset_temp.pdf", onefile=FALSE)
+
+upset(fromExpression(updata), 
+      sets = c("T40", "T50", "T70"), 
+      order.by = "freq", 
+      matrix.color = "#E7B800",
+      point.size = 4,
+      line.size = 1,
+      text.scale = c(2, 2, 2, 2, 2, 2),
+      mainbar.y.label = "ASVs per Intersections", sets.x.label = "ASVs per Temperature",
+      sets.bar.color=c("#00A087FF","#4DBBD5FF","#E64B35FF") 
+      )
+
+#dev.off()
+
+```
+
+
+```{r Venn diagram with ASVs < 2 for pH}
+
+# Subset by pH - using physeq object erebusf2 (trimmed ASVs < 2)
+# hist(sample_data(erebusf2)$pH)
+
+# Transform Temperature into categorical data
+sample_data(erebusf2)$pH_cut <- cut(sample_data(erebusf2)$pH, c(4,5,8,10))
+
+
+# Subset pH - all sites together
+
+# pH5
+pH5<- erebusf2 %>%
+  subset_samples(pH_cut == "(4,5]") %>% # 368 taxa
+  prune_taxa(taxa_sums(.) > 0, .)
+
+
+# pH8
+pH8<- erebusf2 %>%
+  subset_samples(pH_cut == "(5,8]") %>% # 507 taxa
+  prune_taxa(taxa_sums(.) > 0, .)
+
+
+# pH10
+pH10<- erebusf2 %>%
+  subset_samples(pH_cut == "(8,10]") %>% # 366 taxa
+  prune_taxa(taxa_sums(.) > 0, .)
+
+####
+asv_pH5 <- data.frame(t(otu_table(pH5))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set1 <- paste(asv_pH5$rowname, sep="")
+
+asv_pH8 <- data.frame(t(otu_table(pH8))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set2 <- paste(asv_pH8$rowname, sep="")
+
+asv_pH10 <- data.frame(t(otu_table(pH10))) %>%
+  rownames_to_column() %>%
+  select(rowname)
+
+set3 <- paste(asv_pH10$rowname, sep="")
+
+```
+
+```{r}
+
+venn.diagram(
+  x = list(set1, set2, set3),
+  category.names = c("pH < 5", "pH < 8", "pH < 10"),
+  filename = "venn_diagramm_Erebus_pH.png",
+  output=TRUE,
+
+        # Output features
+        imagetype="png" ,
+        height = 480 , 
+        width = 480 , 
+        resolution = 300,
+        compression = "lzw",
+        
+        # Circles
+        lwd = 2,
+        lty = 'blank',
+        fill = myCol,
+        
+        # Numbers
+        cex = .6,
+        fontface = "bold",
+        fontfamily = "sans",
+        
+        # Set names
+        cat.cex = 0.35,
+        cat.fontface = "bold",
+        cat.default.pos = "outer",
+        cat.pos = c(-27, 27, 135),
+        cat.dist = c(0.055, 0.055, 0.085),
+        cat.fontfamily = "sans",
+        rotation = 1
+)
+
+input = list(pH5 = unique(set1),
+             pH8 = unique(set2),
+             pH10 = unique(set3))
+
+# View VennDiagram with the internal binary group labels
+venn(input, show.plot=FALSE)
+# the various overlapping areas are called intersections
+groupcount <- venn(input, show.plot=FALSE)
+# view the ASVs in various intersections
+print(groupcount)
+
+```
+
+
+```{r}
+
+updata <- c(
+  "pH5" = 244,
+  "pH8" = 203,
+  "pH10" = 116,
+  "pH5&pH8" = 62,
+  "pH5&pH10" = 8,
+  "ph8&pH10" = 188,
+  "pH5&pH8&pH10" = 54
+)
+
+upset(fromExpression(updata), 
+      sets = c("pH5", "pH8", "pH10"), 
+      keep.order = TRUE,
+      order.by = "freq", 
+      matrix.color = "#E7B800",
+      point.size = 4,
+      line.size = 1,
+      text.scale = c(2, 2, 2, 2, 2, 2),
+      mainbar.y.label = "ASVs per Iintersections", sets.x.label = "ASVs per pH",
+      sets.bar.color=c("#00A087FF","#4DBBD5FF","#E64B35FF") 
+      )
+
+```

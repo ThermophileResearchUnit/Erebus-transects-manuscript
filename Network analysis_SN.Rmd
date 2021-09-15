@@ -1,0 +1,516 @@
+---
+title: "Erebus network analysis"
+author: "Stephen Noell"
+date: "24 August 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.align = "center",
+                      fig.width = 10,
+                      fig.height = 6)
+```
+
+
+```{r}
+# Libraries
+
+library("tidyverse")       # data wrangling and visualisation
+library("phyloseq")        # analysis of microbial communities - upload data
+library("patchwork")       # plots together
+library("here")            # set the path to the folder
+library("reshape")
+library("RColorBrewer")    # for colour palette
+library("paletteer")       # colour palette
+library("scales")
+library("igraph")         # for network analysis
+library("SpiecEasi")      # for network analysis
+library("Matrix")         # for matrices
+library("ggpubr") # for making final plots arranged
+library("svglite") #for saving SVGs
+
+set.seed(57)
+```
+
+```{r}
+# Input data, filter and transform
+# This phyloseq object has the ASVs numbered and the correct metadata 
+
+erebus <- readRDS("erebus")  # 1018
+erebus
+
+erebusf <- subset_taxa (erebus, (Kingdom !="Eukaryota")) 
+erebusf <- subset_taxa (erebusf, (Order !="Chloroplast") | is.na(Order)) 
+erebusf <- subset_taxa (erebusf, (Family != "Mitochondria") | is.na(Family)) 
+erebusf
+
+# Trim low abundance ASVs
+seq_flt <- genefilter_sample(erebusf, filterfun_sample(function(x) x > 10), A = 3)
+erebusf1 <- prune_taxa(seq_flt, erebusf)
+erebusf1
+
+```
+```{r}
+# Run SpiecEasi with Meinshausen-buhlmann's neighborhood selection, 50 repetitions
+set.seed(57)          #set seed so we always get the same network
+
+erebusf1.net <- spiec.easi(otu_table(erebusf1), method = "mb",
+                          lambda.min.ratio=1e-2,
+                          nlambda=20,
+                          pulsar.params=list(rep.num=50))
+
+```
+
+```{r}
+## Create igraph object
+ig.erebus <- adj2igraph(getRefit(erebusf1.net), 
+                        vertex.attr=list(name=taxa_names(erebusf1)))
+
+ig.erebus <- simplify(ig.erebus, remove.multiple = T, remove.loops = T)
+
+#plot using igraph
+## set size of vertex proportional to clr-mean
+vsize <- rowMeans(clr(otu_table(erebusf1), 1))+2
+
+par(mfrow=c(1,3))
+
+#using fast greedy modularity optimization to define modules
+ig.erebus_fg <- cluster_fast_greedy(as.undirected(ig.erebus))
+
+#basic plot
+plot(ig.erebus_fg, as.undirected(ig.erebus), vertex.size=vsize, vertex.label=NA
+     )
+
+#information about network
+modularity(ig.erebus_fg)
+length(ig.erebus_fg)
+
+```
+
+```{r}
+#Put module info into phyloseq object
+# Get the taxa
+taxa_df<- data.frame(tax_table(erebusf1))
+
+# Add ASVs as a rank
+ASVs <- rownames(tax_table(erebusf1))
+taxa_df$ASV <- ASVs
+
+# Add module info in
+modules <- ig.erebus_fg$membership
+taxa_df$Module <- modules
+
+# Update phyloseq
+erebusf1_new <- phyloseq(otu_table(erebusf1),
+                 tax_table(as.matrix(taxa_df)),
+                 phy_tree(erebusf1),
+                 sample_data(erebusf1))
+
+```
+
+```{r}
+###Final plot
+#plot colors
+pal_bar1 <- RColorBrewer::brewer.pal(12, "Paired")
+pal_barn <- RColorBrewer::brewer.pal(9, "RdYlBu")
+pal_barn2 <- RColorBrewer::brewer.pal(9, "PiYG")
+pal_barn3 <- RColorBrewer::brewer.pal(9, "BrBG")
+pal_netphy <- RColorBrewer::brewer.pal(8, "PuOr")
+pal_netphy2 <- RColorBrewer::brewer.pal(8, "RdBu")
+
+pal_barof <- c("black",pal_barn, pal_barn2, pal_barn3, pal_bar1)
+pal_barcf <- c("black",pal_barn, pal_barn2, pal_barn3)
+pal_netphy_f <- c("black",pal_netphy, pal_netphy2, pal_bar1)
+
+pal_mod2 <- c("#7fc97f", "#969696", "#386cb0", "#ff7f00", "#f0027f" ,"black", "#762a83", "#bf812d")
+
+#plot using phyloseq object; color by phylum
+plot_erebus.net_p <- plot_network(ig.erebus, erebusf1_new, type='taxa',
+                                  color="Phylum", label = NA, 
+                                  point_size = vsize) +
+  scale_color_manual(values = pal_netphy_f) +
+  theme(
+    legend.position = "none",
+    legend.text = element_text(size=8))
+
+plot_erebus.net_p
+
+#color using module
+plot_erebus.net_m <- plot_network(ig.erebus, erebusf1_new, type='taxa',
+                                  color="Module",
+                                label = NA, point_size = vsize) +
+  scale_color_manual(values = pal_mod2)
+
+plot_erebus.net_m
+
+```
+
+```{r}
+###Prepare module data to make heatmap to see how modules vary by sample
+
+net.ab <- data.frame(otu_table(erebusf1_new)) 
+
+net.ab <- as.data.frame(t(net.ab)) %>%
+  rownames_to_column() %>%
+  dplyr::rename(ASV = rowname)
+
+net.tax <- data.frame(tax_table(erebusf1_new))
+
+net.all <- left_join(net.tax, net.ab, by = "ASV")
+
+net.modules <- net.all %>%
+  select(9:23)
+net.modules$Module <- as.factor(net.modules$Module)
+net.modules <- net.modules[order(net.modules$Module),]
+
+net.mod1 <- net.modules[net.modules$Module == 1, ] %>%
+  select(-c(1)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1)
+net.mod2 <- net.modules[net.modules$Module == 2, ]%>%
+   select(-c(1)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1)
+net.mod3 <- net.modules[net.modules$Module == 3, ]%>%
+  select(-c(1)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1)
+net.mod4 <- net.modules[net.modules$Module == 4, ]%>%
+  select(-c(1)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1)
+net.mod5 <- net.modules[net.modules$Module == 5, ]%>%
+  select(-c(1)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1)
+net.mod6 <- net.modules[net.modules$Module == 6, ]%>%
+  select(-c(1)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1)
+net.mod7 <- net.modules[net.modules$Module == 7, ]%>%
+  select(-c(1)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1)
+net.mod8 <- net.modules[net.modules$Module == 8, ]%>%
+  select(-c(1)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1)
+
+net.mod_f <- rbind(net.mod1, net.mod2, net.mod3, net.mod4, net.mod5, net.mod6,
+                   net.mod7, net.mod8) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum)))
+
+net.mod_f <- t(net.mod_f)
+net.mod_f <- as.data.frame(net.mod_f)
+names(net.mod_f) <- c("Mod1","Mod2","Mod3","Mod4","Mod5","Mod6","Mod7" ,"Mod8", "Sum")
+
+net.mod_f <- net.mod_f %>%
+  mutate(Mod1 = Mod1/Sum) %>%
+  mutate(Mod2 = Mod2/Sum) %>%
+  mutate(Mod3 = Mod3/Sum) %>%
+  mutate(Mod4 = Mod4/Sum) %>%
+  mutate(Mod5 = Mod5/Sum) %>%
+  mutate(Mod6 = Mod6/Sum) %>%
+  mutate(Mod7 = Mod7/Sum) %>%
+  mutate(Mod8 = Mod8/Sum) %>%
+  select(-c(9)) %>% ###CHEK THIS
+  rownames_to_column() %>%
+  dplyr::rename(Sample = rowname)
+
+#add temp and pH info
+net.mod_f <- data.frame(sample_data(erebusfr)) %>%
+  select(4,5) %>%
+  rownames_to_column() %>%
+  dplyr::rename(Sample = rowname) %>%
+  left_join(., net.mod_f, by = "Sample")
+
+net.mod_f$pH <- as.factor(net.mod_f$pH)
+net.mod_f$Temperature <- as.factor(net.mod_f$Temperature)
+
+net.mod_melt <- melt(net.mod_f)
+net.mod_melt$variable <- as.character(net.mod_melt$variable)
+net.mod_melt$Sample <- as.character(net.mod_melt$Sample)
+
+#Add Transect and Site info
+net.mod_melt <- net.mod_melt %>%
+  mutate(Site = case_when(
+    startsWith(Sample, "T") ~ "Tramway Ridge",
+    startsWith(Sample, "W") ~ "Western Crater"
+  ))
+
+net.mod_melt <- net.mod_melt %>%
+  mutate(Transect = case_when(
+    startsWith(Sample, "TR1") ~ "TR1",
+    startsWith(Sample, "TR2") ~ "TR2",
+    startsWith(Sample, "WC") ~ "WC"
+  ))
+
+```
+
+```{r}
+###Heatmap for module variation by transect
+heatmap_mod <- ggplot(net.mod_melt, aes(Temperature, variable)) +
+  geom_tile(aes(fill = value)) +
+  theme_bw() +
+  scale_fill_distiller('Relative \nContribution', palette = "YlOrRd", direction = 1) +
+  ylab("Module") +
+  xlab("Temperature (\u00b0C)") +
+  theme(
+    axis.title.x = element_text (size=16),
+    axis.text.x  = element_text(size=14),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=12),
+    strip.text.x = element_text(size = 14),
+    legend.text = element_text(size=14),
+    legend.title = element_text(size=14)) +
+  facet_grid(.~Transect, scales = "free")
+
+heatmap_mod
+
+```
+
+```{r}
+###Get bar plot of phyla in modules
+erebusf1_mod1 <- subset_taxa(erebusf1_new, (Module =="1")) 
+erebusf1_mod2 <- subset_taxa(erebusf1_new, (Module =="2")) 
+erebusf1_mod3 <- subset_taxa(erebusf1_new, (Module =="3")) 
+erebusf1_mod4 <- subset_taxa(erebusf1_new, (Module =="4")) 
+erebusf1_mod5 <- subset_taxa(erebusf1_new, (Module =="5")) 
+erebusf1_mod6 <- subset_taxa(erebusf1_new, (Module =="6")) 
+erebusf1_mod7 <- subset_taxa(erebusf1_new, (Module =="7")) 
+erebusf1_mod8 <- subset_taxa(erebusf1_new, (Module =="8")) 
+
+
+#Transform counts into abundance of ASV/abundance of all ASVs at all samples in this module
+mod1_ab <- as.data.frame(otu_table(erebusf1_mod1)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1) %>%
+  t(.) %>%
+  as.data.frame(.) %>%
+  apply(.,2,function(x){x/sum(x)}) %>%
+  as.data.frame(.) %>%
+  rownames_to_column() %>%
+  dplyr::rename(ASV = rowname) %>%
+  dplyr::rename(Freq = ...15) %>%
+  left_join(., as.data.frame(tax_table(erebusf1_mod1)), by = "ASV")
+
+mod2_ab <- as.data.frame(otu_table(erebusf1_mod2)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1) %>%
+  t(.) %>%
+  as.data.frame(.) %>%
+  apply(.,2,function(x){x/sum(x)}) %>%
+  as.data.frame(.) %>%
+  rownames_to_column() %>%
+  dplyr::rename(ASV = rowname) %>%
+  dplyr::rename(Freq = ...15) %>%
+  left_join(., as.data.frame(tax_table(erebusf1_mod2)), by = "ASV")
+
+mod3_ab <- as.data.frame(otu_table(erebusf1_mod3)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1) %>%
+  t(.) %>%
+  as.data.frame(.) %>%
+  apply(.,2,function(x){x/sum(x)}) %>%
+  as.data.frame(.) %>%
+  rownames_to_column() %>%
+  dplyr::rename(ASV = rowname) %>%
+  dplyr::rename(Freq = ...15) %>%
+  left_join(., as.data.frame(tax_table(erebusf1_mod3)), by = "ASV")
+
+mod4_ab <- as.data.frame(otu_table(erebusf1_mod4)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1) %>%
+  t(.) %>%
+  as.data.frame(.) %>%
+  apply(.,2,function(x){x/sum(x)}) %>%
+  as.data.frame(.) %>%
+  rownames_to_column() %>%
+  dplyr::rename(ASV = rowname) %>%
+  dplyr::rename(Freq = ...15) %>%
+  left_join(., as.data.frame(tax_table(erebusf1_mod4)), by = "ASV")
+
+mod5_ab <- as.data.frame(otu_table(erebusf1_mod5)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1) %>%
+  t(.) %>%
+  as.data.frame(.) %>%
+  apply(.,2,function(x){x/sum(x)}) %>%
+  as.data.frame(.) %>%
+  rownames_to_column() %>%
+  dplyr::rename(ASV = rowname) %>%
+  dplyr::rename(Freq = ...15) %>%
+  left_join(., as.data.frame(tax_table(erebusf1_mod5)), by = "ASV")
+
+mod6_ab <- as.data.frame(otu_table(erebusf1_mod6)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1) %>%
+  t(.) %>%
+  as.data.frame(.) %>%
+  apply(.,2,function(x){x/sum(x)}) %>%
+  as.data.frame(.) %>%
+  rownames_to_column() %>%
+  dplyr::rename(ASV = rowname) %>%
+  dplyr::rename(Freq = ...15) %>%
+  left_join(., as.data.frame(tax_table(erebusf1_mod6)), by = "ASV")
+
+mod7_ab <- as.data.frame(otu_table(erebusf1_mod7)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1) %>%
+  t(.) %>%
+  as.data.frame(.) %>%
+  apply(.,2,function(x){x/sum(x)}) %>%
+  as.data.frame(.) %>%
+  rownames_to_column() %>%
+  dplyr::rename(ASV = rowname) %>%
+  dplyr::rename(Freq = ...15) %>%
+  left_join(., as.data.frame(tax_table(erebusf1_mod7)), by = "ASV")
+
+mod8_ab <- as.data.frame(otu_table(erebusf1_mod8)) %>%
+  bind_rows(summarise(.,across(where(is.numeric), sum))) %>%
+  tail(., n=1) %>%
+  t(.) %>%
+  as.data.frame(.) %>%
+  apply(.,2,function(x){x/sum(x)}) %>%
+  as.data.frame(.) %>%
+  rownames_to_column() %>%
+  dplyr::rename(ASV = rowname) %>%
+  dplyr::rename(Freq = ...15) %>%
+  left_join(., as.data.frame(tax_table(erebusf1_mod8)), by = "ASV")
+
+#Phylum
+net.tax_f_p <- rbind(mod1_ab, mod2_ab, mod3_ab, mod4_ab, mod5_ab, mod6_ab,
+                   mod7_ab, mod8_ab)
+
+net.tax_f_p["Phylum"][net.tax_f_p["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
+net.tax_f_p["Phylum"][which(net.tax_f_p$Freq < 0.01), ] <- "Phyla < 1 %"
+
+phylum_o <- c("Phyla < 1 %","Acidobacteriota","Actinobacteriota","Armatimonadota",
+              "Bacteroidota", "Chloroflexi","Cyanobacteria","Deinococcota",
+              "Firmicutes","GAL15", "Gemmatimonadota",
+              "Methylomirabilota","Myxococcota","Nitrospirota", "Planctomycetota", 
+              "Proteobacteria","Thaumarchaeota","Verrucomicrobiota",
+                                    "WPS-2")
+
+net.tax_f_p$Phylum <- factor(as.character(net.tax_f_p$Phylum), levels=phylum_o)
+net.tax_f_p <- net.tax_f_p[order(net.tax_f_p$Phylum),]
+
+#Class
+net.tax_f_c <- rbind(mod1_ab, mod2_ab, mod3_ab, mod4_ab, mod5_ab, mod6_ab,
+                   mod7_ab, mod8_ab)
+#for making table S4
+net.tax_f_c_table <- rbind(mod1_ab, mod2_ab, mod3_ab, mod4_ab, mod5_ab, mod6_ab,
+                   mod7_ab, mod8_ab)
+
+net.tax_f_c["Class"][which(net.tax_f_c$Freq < 0.02), ] <- "Class < 2 %"
+
+class_o <- c("Class < 2 %", "Acidimicrobiia","Acidobacteriae","Actinobacteria","AD3","Alphaproteobacteria",
+             "Anaerolineae","Bacteroidia","Blastocatellia","Chloroflexia","Chthonomonadetes",
+             "Cyanobacteriia","Deinococci","FFCH5909","Gammaproteobacteria","Holophagae",
+             "KD4-96","Kryptonia","Ktedonobacteria","Nitrososphaeria","Nitrospiria","Planctomycetes",
+             "SHA-26","Sulfobacillia","Thermoleophilia","Verrucomicrobiae","YNPFFP2")
+
+net.tax_f_c$Class <- factor(as.character(net.tax_f_c$Class), levels=class_o)
+net.tax_f_c <- net.tax_f_c[order(net.tax_f_c$Class),]
+
+#Order
+net.tax_f_o <- rbind(mod1_ab, mod2_ab, mod3_ab, mod4_ab, mod5_ab, mod6_ab,
+                   mod7_ab, mod8_ab)
+
+net.tax_f_o["Order"][which(net.tax_f_o$Freq < 0.03), ] <- "Order < 3 %"
+
+order_o <- c("Order < 3 %","Acidobacteriales","Bryobacterales","Chitinophagales",
+             "Chthoniobacterales","Chthonomonadales","Cyanobacteriales","Deinococcales",
+             "Gammaproteobacteria Incertae Sedis", "Gemmatales","IMCC26256","Kryptoniales",
+             "Ktedonobacterales","Leptolyngbyales","Nitrososphaerales","Nitrospirales",
+             "Pyrinomonadales","Rhizobiales","SBR1031","SCGC AB-179-E04","Solirubrobacterales",
+             "Sphingomonadales","Subgroup 2","Subgroup 7","Thermales","Thermomicrobiales",
+             "Xanthomonadales")
+
+net.tax_f_o$Order <- factor(as.character(net.tax_f_o$Order), levels=order_o)
+net.tax_f_o <- net.tax_f_o[order(net.tax_f_o$Order),]
+
+
+#Make plots
+mod_order <- ggplot(net.tax_f_o, aes(x = Module, y = Freq, fill = Order)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = pal_barof) +
+  theme_bw() +
+  ylab("Relative Abundance in Module") +
+  xlab("Module") +
+  theme(
+    axis.title.x = element_text (size=16),
+    axis.text.x  = element_text(size=14),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=14),
+    strip.text.x = element_text(size = 14),
+    legend.text = element_text(size=12),
+    legend.title = element_text(size=14)) +
+  guides (fill = guide_legend (ncol = 2))
+
+mod_class <- ggplot(net.tax_f_c, aes(x = Module, y = Freq, fill = Class)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = pal_barcf) +
+  theme_bw() +
+  ylab("Relative Abundance in Module") +
+  xlab("Module") +
+  theme(
+    axis.title.x = element_text (size=16),
+    axis.text.x  = element_text(size=14),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=14),
+    strip.text.x = element_text(size = 14),
+    legend.text = element_text(size=12),
+    legend.title = element_text(size=14)) +
+  guides (fill = guide_legend (ncol = 2))
+
+mod_phyla <- ggplot(net.tax_f_p, aes(x = Module, y = Freq, fill = Phylum)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = pal_netphy_f) +
+  theme_bw() +
+  ylab("Relative Abundance in Module") +
+  xlab("Module") +
+  theme(
+    axis.title.x = element_text (size=16),
+    axis.text.x  = element_text(size=14),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=14),
+    strip.text.x = element_text(size = 14),
+    legend.text = element_text(size=12),
+    legend.title = element_text(size=14)) +
+  guides (fill = guide_legend (ncol = 2))
+
+mod_order
+mod_class
+mod_phyla
+
+```
+
+```{r}
+###Final Plot
+plot_net_final <- ggarrange(plot_erebus.net_m, heatmap_mod,
+                            mod_class,
+          nrow = 3,
+          ncol = 1,
+          labels = c("A","B","C"),
+          heights = c(2, 1.5, 2)
+)
+
+plot_net_final
+            
+#ggsave("Figure 6_SN.png", plot_net_final, width = 240, height = 300, units = "mm", dpi = 300)
+
+#ggsave("Figure 6_SN.svg", plot_net_final, width = 240, height = 300, units = "mm", dpi = 300)
+
+```
+
+```{r}
+#taxonomy table for interpretation of results
+net.tax_f_c_table <- net.tax_f_c_table[order(net.tax_f_c_table$Module),]
+
+#write.csv(net.tax_f_c_table[c(10,1:9)], "Table S4.csv")
+
+```
