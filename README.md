@@ -1,6 +1,8 @@
 # Erebus-transects-manuscript
 Environmental and biological data (phyloseq object) and associated code for analyzing the data for the 2021 Erebus transects manuscript. All files were created and/or edited by Mafalda Baptista, Emily Smith, and Stephen Noell.
 
+To explore abundance profiles for whichever ASVs you want to look at, see the code at the end of the "Biological data initial analysis_SN.Rmd" file.
+
 R files:
 
 Analysis of microbial community_SN: code for creating Figure 4 in the paper.
