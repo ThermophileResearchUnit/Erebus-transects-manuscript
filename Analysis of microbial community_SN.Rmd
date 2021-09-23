@@ -1,5 +1,5 @@
 ---
-title: "Emily Thesis Analysis"
+title: "Analysis of microbial community_Erebus"
 author: "Mafalda S. Baptista"
 output: html_document
 ---
@@ -101,8 +101,7 @@ plot_kingdom<- ggplot(erebus_domain, aes(x = factor(Temperature), y = Abundance,
 ## Phylum
 
 # Data for plotting
-erebus_p <- erebusfr %>% psmelt() #%>%
-   #filter(Abundance > 0.01) 
+erebus_p <- erebusfr %>% psmelt()
 
 erebus_p["Phylum"][erebus_p["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
 erebus_p["Phylum"][which(erebus_p$Abundance < 0.01), ] <- "Phyla < 1 %"
@@ -152,4 +151,50 @@ plot_kingdom_phylum
 
 #ggsave("Figure 4_SN.svg", plot = plot_kingdom_phylum, dpi = 300, width = 240, height = 180, units = "mm")
 
+```
+
+```{r}
+# What percentage of reads can't be assigned to a phylum?
+erebus_na <- erebusf %>%
+  psmelt() %>%
+  filter(., is.na(Phylum))
+
+erebus_all <- erebusf %>%
+  psmelt()
+
+na_abund <- sum(erebus_na$Abundance)
+all_abund <- sum(erebus_all$Abundance)
+
+na_abund / all_abund
+# 6% of all reads cannot be assigned to a phylum
+
+erebus_na_cl <- erebusf %>%
+  psmelt() %>%
+  filter(., is.na(Class))
+
+na_abund_cl <- sum(erebus_na_cl$Abundance)
+all_abund <- sum(erebus_all$Abundance)
+
+na_abund_cl / all_abund
+# 13% of all reads cannot be assigned to a class
+
+erebus_na_or <- erebusf %>%
+  psmelt() %>%
+  filter(., is.na(Order))
+
+na_abund_or <- sum(erebus_na_or$Abundance)
+all_abund <- sum(erebus_all$Abundance)
+
+na_abund_or / all_abund
+# 21% of all reads cannot be assigned to an order
+
+erebus_na_gen <- erebusf %>%
+  psmelt() %>%
+  filter(., is.na(Genus))
+
+na_abund_gen <- sum(erebus_na_gen$Abundance)
+all_abund <- sum(erebus_all$Abundance)
+
+na_abund_gen / all_abund
+# 58% of all reads cannot be assigned to a genus
 ```
