@@ -537,6 +537,7 @@ erebus_p <- erebus_p %>%
   select(OTU, Sample, Abundance,  Site, Transect, Temperature, pH, Kingdom, Phylum, Class, Order, Family, Genus)
 # I retained all the taxonomy in case you want to cahnge the code and inspect other levels
 
+erebus_p["Phylum"][erebus_p["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
 
 # For Tramway Ridge sites the Rel Abundance of Archaea varied from 13 % to 57 %
 # For Western Crater sites the Rel Abundance of Archaea varied from 0.5 % to 7 %
@@ -573,5 +574,37 @@ plot_tree(wcr, ladderize="left", color="Phylum")
 
 # We can see that the NA reads are scattered through the Phyla, which means that probably they belong to a known Phylum but the sequence is not in the database and therefore was not assigned
 # Note that this tree in phyloseq is not an appropriate way of showing phylogeny, it is just a quick check
+
+```
+
+```{r}
+#Look at the abundance profile of whatever ASVs you want to; I use ASV_34 (Nitrospirota) and Thaumarchaeota as an example
+
+erebus_asv <- erebus_p %>%
+  filter(., OTU == "ASV_34" | Phylum == "Thaumarchaeota")
+
+erebus_asv$Temperature <- as.factor(erebus_asv$Temperature)
+
+erebus_asv$ASV_Phylum = paste(erebus_asv$Kingdom,
+                                    erebus_asv$Phylum, erebus_asv$OTU)
+
+heatmap_asv <- ggplot(erebus_asv, aes(Temperature, ASV_Phylum)) +
+  geom_tile(aes(fill = Abundance)) +
+  theme_bw() +
+  scale_fill_distiller('CLR \nAbundance', palette = "YlOrRd", direction = 1) +
+  ylab("ASV #") +
+  xlab("Temperature (\u00b0C)") +
+  theme(
+    axis.title.x = element_text (size=16),
+    axis.text.x  = element_text(size=14, angle = 45,
+                                hjust= 1.3, vjust=1.3),
+    axis.title.y = element_text(size=16),
+    axis.text.y  = element_text(size=10),
+    strip.text.x = element_text(size = 14),
+    legend.text = element_text(size=14),
+    legend.title = element_text(size=14)) +
+  facet_grid(.~Transect, scales = "free")
+
+heatmap_asv
 
 ```

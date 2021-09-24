@@ -267,6 +267,8 @@ rf.site.data_all <- left_join(rf.site.data, site.ab, by = "ASV")
 #replace NA in Phylum with Unassigned
 rf.site.data_all$Phylum[is.na(rf.site.data_all$Phylum)] <- 'Unassigned'
 
+rf.site.data_all["Phylum"][rf.site.data_all["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
+
 rf.site.data_all$ASV_Phylum = paste(rf.site.data_all$Kingdom,
                                     rf.site.data_all$Phylum, rf.site.data_all$ASV) 
 
@@ -297,7 +299,7 @@ heatmap_f <- ggplot(rf.site.melt, aes(variable, ASV_Phylum)) +
   theme_bw() +
   scale_fill_distiller('CLR \nAbundance', palette = "YlOrRd", direction = 1) +
   ylab("Kingdom, Phylum, ASV #") +
-  xlab("Temperature (?C)") +
+  xlab("Temperature (\u00b0C)") +
   theme(
     axis.title.x = element_text (size=16),
     axis.text.x  = element_text(size=14, angle = 45,
@@ -308,6 +310,8 @@ heatmap_f <- ggplot(rf.site.melt, aes(variable, ASV_Phylum)) +
     legend.text = element_text(size=14),
     legend.title = element_text(size=14)) +
   facet_grid(.~Transect, scales = "free")
+
+heatmap_f
 
 #ggsave("RFheatmap.png", heatmap_f, width = 240, height = 240, units = "mm",dpi = 300)
 
