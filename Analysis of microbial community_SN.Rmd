@@ -74,7 +74,7 @@ erebus_domain <- erebusfr %>%
 pal_barn <- RColorBrewer::brewer.pal(8, "PuOr")
 pal_barn2 <- RColorBrewer::brewer.pal(8, "RdBu")
 
-pal_barnf <- c("black", pal_barn, pal_barn2)
+pal_barnf <- c("black", pal_barn, pal_barn2, "#636363")
 
 # Plot
 plot_kingdom<- ggplot(erebus_domain, aes(x = factor(Temperature), y = Abundance, 
@@ -105,14 +105,16 @@ erebus_p <- erebusfr %>% psmelt()
 
 erebus_p["Phylum"][erebus_p["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
 erebus_p["Phylum"][which(erebus_p$Abundance < 0.01), ] <- "Phyla < 1 %"
+erebus_p$Phylum[is.na(erebus_p$Phylum)] = "Unassigned"
+  
 
 #Reorder phyla so <1% is first, then alphabetical
 x <- c("Phyla < 1 %","Acidobacteriota","Actinobacteriota","Armatimonadota",
                                     "Bacteroidota", "Chloroflexi","Cyanobacteria",
                                     "Deinococcota","Firmicutes","GAL15",
                                     "Myxococcota","Nitrospirota", "Planctomycetota",
-                                    "Proteobacteria","Thaumarchaeota","Verrucomicrobiota",
-                                    "WPS-2")
+                                    "Proteobacteria","Thaumarchaeota",
+                                    "Verrucomicrobiota","WPS-2","Unassigned")
 
 erebus_p$Phylum <- factor(as.character(erebus_p$Phylum), levels=x)
 erebus_p <- erebus_p[order(erebus_p$Phylum),]

@@ -114,16 +114,16 @@ erebusf1_new <- phyloseq(otu_table(erebusf1),
 ```{r}
 ###Final plot
 #plot colors
-pal_bar1 <- RColorBrewer::brewer.pal(12, "Paired")
-pal_barn <- RColorBrewer::brewer.pal(9, "RdYlBu")
+pal_bar_phy <- c("#a6dba0","#008837")
+pal_barn <- RColorBrewer::brewer.pal(8, "RdYlBu")
 pal_barn2 <- RColorBrewer::brewer.pal(9, "PiYG")
 pal_barn3 <- RColorBrewer::brewer.pal(9, "BrBG")
 pal_netphy <- RColorBrewer::brewer.pal(8, "PuOr")
 pal_netphy2 <- RColorBrewer::brewer.pal(8, "RdBu")
 
-pal_barof <- c("black",pal_barn, pal_barn2, pal_barn3, pal_bar1)
-pal_barcf <- c("black",pal_barn, pal_barn2, pal_barn3)
-pal_netphy_f <- c("black",pal_netphy, pal_netphy2, pal_bar1)
+pal_barof <- c("black",pal_barn, pal_barn2, pal_barn3, "#636363")
+pal_barcf <- c("black",pal_barn, pal_barn2, pal_barn3, "#636363")
+pal_netphy_f <- c("black",pal_netphy, pal_netphy2, pal_bar_phy, "#636363")
 
 pal_mod2 <- c("#7fc97f", "#969696", "#386cb0", "#ff7f00", "#f0027f" ,"black", "#762a83", "#bf812d")
 
@@ -387,13 +387,14 @@ net.tax_f_p <- rbind(mod1_ab, mod2_ab, mod3_ab, mod4_ab, mod5_ab, mod6_ab,
 
 net.tax_f_p["Phylum"][net.tax_f_p["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
 net.tax_f_p["Phylum"][which(net.tax_f_p$Freq < 0.01), ] <- "Phyla < 1 %"
+net.tax_f_p$Phylum[is.na(net.tax_f_p$Phylum)] = "Unassigned"
 
 phylum_o <- c("Phyla < 1 %","Acidobacteriota","Actinobacteriota","Armatimonadota",
               "Bacteroidota", "Chloroflexi","Cyanobacteria","Deinococcota",
               "Firmicutes","GAL15", "Gemmatimonadota",
               "Methylomirabilota","Myxococcota","Nitrospirota", "Planctomycetota", 
               "Proteobacteria","Thaumarchaeota","Verrucomicrobiota",
-                                    "WPS-2")
+                                    "WPS-2", "Unassigned")
 
 net.tax_f_p$Phylum <- factor(as.character(net.tax_f_p$Phylum), levels=phylum_o)
 net.tax_f_p <- net.tax_f_p[order(net.tax_f_p$Phylum),]
@@ -406,12 +407,15 @@ net.tax_f_c_table <- rbind(mod1_ab, mod2_ab, mod3_ab, mod4_ab, mod5_ab, mod6_ab,
                    mod7_ab, mod8_ab)
 
 net.tax_f_c["Class"][which(net.tax_f_c$Freq < 0.02), ] <- "Class < 2 %"
+net.tax_f_c$Class[is.na(net.tax_f_c$Class)] = "Unassigned"
 
 class_o <- c("Class < 2 %", "Acidimicrobiia","Acidobacteriae","Actinobacteria","AD3","Alphaproteobacteria",
              "Anaerolineae","Bacteroidia","Blastocatellia","Chloroflexia","Chthonomonadetes",
              "Cyanobacteriia","Deinococci","FFCH5909","Gammaproteobacteria","Holophagae",
-             "KD4-96","Kryptonia","Ktedonobacteria","Nitrososphaeria","Nitrospiria","Planctomycetes",
-             "SHA-26","Sulfobacillia","Thermoleophilia","Verrucomicrobiae","YNPFFP2")
+             "KD4-96","Kryptonia","Ktedonobacteria","Nitrososphaeria","Nitrospiria",
+             "Planctomycetes",
+             "SHA-26","Sulfobacillia","Thermoleophilia","Verrucomicrobiae","YNPFFP2",
+             "Unassigned")
 
 net.tax_f_c$Class <- factor(as.character(net.tax_f_c$Class), levels=class_o)
 net.tax_f_c <- net.tax_f_c[order(net.tax_f_c$Class),]
@@ -421,14 +425,16 @@ net.tax_f_o <- rbind(mod1_ab, mod2_ab, mod3_ab, mod4_ab, mod5_ab, mod6_ab,
                    mod7_ab, mod8_ab)
 
 net.tax_f_o["Order"][which(net.tax_f_o$Freq < 0.03), ] <- "Order < 3 %"
+net.tax_f_o$Order[is.na(net.tax_f_o$Order)] = "Unassigned"
 
 order_o <- c("Order < 3 %","Acidobacteriales","Bryobacterales","Chitinophagales",
              "Chthoniobacterales","Chthonomonadales","Cyanobacteriales","Deinococcales",
              "Gammaproteobacteria Incertae Sedis", "Gemmatales","IMCC26256","Kryptoniales",
              "Ktedonobacterales","Leptolyngbyales","Nitrososphaerales","Nitrospirales",
-             "Pyrinomonadales","Rhizobiales","SBR1031","SCGC AB-179-E04","Solirubrobacterales",
+             "Pyrinomonadales","Rhizobiales",
+             "SBR1031","SCGC AB-179-E04","Solirubrobacterales",
              "Sphingomonadales","Subgroup 2","Subgroup 7","Thermales","Thermomicrobiales",
-             "Xanthomonadales")
+             "Xanthomonadales","Unassigned")
 
 net.tax_f_o$Order <- factor(as.character(net.tax_f_o$Order), levels=order_o)
 net.tax_f_o <- net.tax_f_o[order(net.tax_f_o$Order),]
@@ -501,9 +507,9 @@ plot_net_final <- ggarrange(plot_erebus.net_m, heatmap_mod,
 
 plot_net_final
             
-#ggsave("Figure 6_SN.png", plot_net_final, width = 240, height = 300, units = "mm", dpi = 300)
+ggsave("Figure 6_SN.png", plot_net_final, width = 240, height = 300, units = "mm", dpi = 300)
 
-#ggsave("Figure 6_SN.svg", plot_net_final, width = 240, height = 300, units = "mm", dpi = 300)
+ggsave("Figure 6_SN.svg", plot_net_final, width = 240, height = 300, units = "mm", dpi = 300)
 
 ```
 
