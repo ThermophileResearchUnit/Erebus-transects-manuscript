@@ -149,9 +149,9 @@ ratios_final <- ggarrange(ratios_box, ratios_scatter,
 
 ratios_final
 
-#ggsave("Figure S1.png", ratios_final, width = 240, height = 200, units = "mm",dpi = 300)
+#ggsave("Figure S2.png", ratios_final, width = 240, height = 200, units = "mm",dpi = 300)
 
-#ggsave("Figure S1.svg", ratios_final, width = 240, height = 200, units = "mm",dpi = 300)
+#ggsave("Figure S2.svg", ratios_final, width = 240, height = 200, units = "mm",dpi = 300)
 
 ```
 

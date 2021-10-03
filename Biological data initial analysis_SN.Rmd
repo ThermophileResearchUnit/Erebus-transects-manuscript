@@ -424,9 +424,9 @@ sup_fig_reads <- ggarrange(plot_reads, plot_box_read, pcoa.erebusf2r, pcoa.erebu
           )
 sup_fig_reads
 
-#ggsave("Figure S3.png", sup_fig_reads, width = 240, height = 120, units = "mm",dpi = 300)
+#ggsave("Figure S1.png", sup_fig_reads, width = 240, height = 120, units = "mm",dpi = 300)
 
-#ggsave("Figure S3.svg", sup_fig_reads, width = 240, height = 160, units = "mm",dpi = 300)
+#ggsave("Figure S1.svg", sup_fig_reads, width = 240, height = 160, units = "mm",dpi = 300)
 
 ```
 
@@ -455,9 +455,9 @@ pcoa.erebusfr<- plot_ordination(erebusfr, erebusfr.mds,
 pcoa.erebusfr
 
 ###Final PCOA plot of biological data of samples
-#ggsave("Figure S2C.png", plot = pcoa.erebusfr, width = 120, height = 90, units = "mm",dpi = 300)
+#ggsave("Figure S3C.png", plot = pcoa.erebusfr, width = 120, height = 90, units = "mm",dpi = 300)
 
-#ggsave("Figure S2C.svg", plot = pcoa.erebusfr, width = 120, height = 90, units = "mm",dpi = 300)
+#ggsave("Figure S3C.svg", plot = pcoa.erebusfr, width = 120, height = 90, units = "mm",dpi = 300)
 
 ```
 
@@ -581,12 +581,11 @@ plot_tree(wcr, ladderize="left", color="Phylum")
 #Look at the abundance profile of whatever ASVs you want to; I use ASV_34 (Nitrospirota) and Thaumarchaeota as an example
 
 erebus_asv <- erebus_p %>%
-  filter(., OTU == "ASV_34" | Phylum == "Thaumarchaeota")
+  filter(., Phylum == "Planctomycetota")
 
 erebus_asv$Temperature <- as.factor(erebus_asv$Temperature)
 
-erebus_asv$ASV_Phylum = paste(erebus_asv$Kingdom,
-                                    erebus_asv$Phylum, erebus_asv$OTU)
+erebus_asv$ASV_Phylum = paste(erebus_asv$Phylum, erebus_asv$OTU)
 
 heatmap_asv <- ggplot(erebus_asv, aes(Temperature, ASV_Phylum)) +
   geom_tile(aes(fill = Abundance)) +
