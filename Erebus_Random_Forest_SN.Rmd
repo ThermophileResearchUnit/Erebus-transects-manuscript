@@ -323,7 +323,7 @@ heatmap_f
 #print taxa table
 rf.site.data_all <- rf.site.data_all[order(rf.site.data_all$ASV_Phylum,
                                            decreasing = FALSE),]
-#write.csv(rf.site.data_all[c(24,1,9,2:8)], "Table S3.csv")
+#write.csv(rf.site.data_all[c(24,1,9,2:8)], "Table S4.csv")
 ```
 
 

@@ -517,6 +517,6 @@ ggsave("Figure 6_SN.svg", plot_net_final, width = 240, height = 300, units = "mm
 #taxonomy table for interpretation of results
 net.tax_f_c_table <- net.tax_f_c_table[order(net.tax_f_c_table$Module),]
 
-#write.csv(net.tax_f_c_table[c(10,1:9)], "Table S4.csv")
+#write.csv(net.tax_f_c_table[c(10,1:9)], "Table S5.csv")
 
 ```
