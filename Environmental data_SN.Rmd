@@ -25,6 +25,7 @@ library ("cowplot")        # set a theme
 library("here")            # set the path to the folder 
 library("viridis")          # for color palettes
 library("ggpubr")         # for arranging plots
+library("svglite") #for saving SVGs
 
 set.seed(57)
 ```
@@ -887,9 +888,9 @@ pcoa_both <- ggarrange(pcoa.envdata, pcoa.abiotic,
           ncol = 2, nrow = 1)
 pcoa_both
 
-#ggsave("Figure S3A-B.png", pcoa_both, width = 240, height = 90, units = "mm", dpi = 300)
+#ggsave("Figure S2A-B.png", pcoa_both, width = 240, height = 90, units = "mm", dpi = 300)
 
-#ggsave("Figure S3A-B.svg", pcoa_both, width = 240, height = 90, units = "mm", dpi = 300)
+#ggsave("Figure S2A-B.svg", pcoa_both, width = 240, height = 90, units = "mm", dpi = 300)
 
 ```
 

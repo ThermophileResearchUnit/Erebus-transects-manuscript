@@ -106,7 +106,9 @@ ratios_box <- ggplot(data = isotopes_ratio,
 
 ratios_box
   
-#ggsave("Pb_isotopes_ratio_boxplot_transect.png", dpi = 300, height = 4, width = 9)
+#ggsave("Figure S3.png", ratios_box, width = 240, height = 90, units = "mm",dpi = 300)
+
+#ggsave("Figure S3.svg", ratios_box, width = 240, height = 90, units = "mm",dpi = 300)
 ```
 
 
@@ -136,22 +138,6 @@ ratios_scatter <- ggplot(data = isotopes_ratio2,
 ratios_scatter
 
 #ggsave("Pb_isotopes_ratio_correl.png", dpi = 300, height = 4, width = 8)
-
-```
-
-```{r}
-###Final plot
-
-ratios_final <- ggarrange(ratios_box, ratios_scatter,
-          labels = c("A","C"),
-          nrow = 2,
-          ncol = 1)
-
-ratios_final
-
-#ggsave("Figure S2.png", ratios_final, width = 240, height = 200, units = "mm",dpi = 300)
-
-#ggsave("Figure S2.svg", ratios_final, width = 240, height = 200, units = "mm",dpi = 300)
 
 ```
 
