@@ -267,8 +267,6 @@ rf.site.data_all <- left_join(rf.site.data, site.ab, by = "ASV")
 #replace NA in Phylum with Unassigned
 rf.site.data_all$Phylum[is.na(rf.site.data_all$Phylum)] <- 'Unassigned'
 
-rf.site.data_all["Phylum"][rf.site.data_all["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
-
 rf.site.data_all$ASV_Phylum = paste(rf.site.data_all$Kingdom,
                                     rf.site.data_all$Phylum, rf.site.data_all$ASV) 
 
@@ -298,7 +296,7 @@ heatmap_f <- ggplot(rf.site.melt, aes(variable, ASV_Phylum)) +
   geom_tile(aes(fill = value)) +
   theme_bw() +
   scale_fill_distiller('CLR \nAbundance', palette = "YlOrRd", direction = 1) +
-  ylab("Kingdom, Phylum, ASV #") +
+  ylab("Phylum, ASV #") +
   xlab("Temperature (\u00b0C)") +
   theme(
     axis.title.x = element_text (size=16),
@@ -313,9 +311,9 @@ heatmap_f <- ggplot(rf.site.melt, aes(variable, ASV_Phylum)) +
 
 heatmap_f
 
-#ggsave("RFheatmap.png", heatmap_f, width = 240, height = 240, units = "mm",dpi = 300)
+#ggsave("Figure 6.png", heatmap_f, width = 240, height = 240, units = "mm",dpi = 300)
 
-#ggsave("RFheatmap.svg", heatmap_f, width = 240, height = 240, units = "mm",dpi = 300)
+#ggsave("Figure 6.svg", heatmap_f, width = 240, height = 240, units = "mm",dpi = 300)
 
 ```
 

@@ -385,15 +385,14 @@ mod8_ab <- as.data.frame(otu_table(erebusf1_mod8)) %>%
 net.tax_f_p <- rbind(mod1_ab, mod2_ab, mod3_ab, mod4_ab, mod5_ab, mod6_ab,
                    mod7_ab, mod8_ab)
 
-net.tax_f_p["Phylum"][net.tax_f_p["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
 net.tax_f_p["Phylum"][which(net.tax_f_p$Freq < 0.01), ] <- "Phyla < 1 %"
 net.tax_f_p$Phylum[is.na(net.tax_f_p$Phylum)] = "Unassigned"
 
 phylum_o <- c("Phyla < 1 %","Acidobacteriota","Actinobacteriota","Armatimonadota",
-              "Bacteroidota", "Chloroflexi","Cyanobacteria","Deinococcota",
+              "Bacteroidota", "Chloroflexi","Crenarchaeota", "Cyanobacteria","Deinococcota",
               "Firmicutes","GAL15", "Gemmatimonadota",
               "Methylomirabilota","Myxococcota","Nitrospirota", "Planctomycetota", 
-              "Proteobacteria","Thaumarchaeota","Verrucomicrobiota",
+              "Proteobacteria","Verrucomicrobiota",
                                     "WPS-2", "Unassigned")
 
 net.tax_f_p$Phylum <- factor(as.character(net.tax_f_p$Phylum), levels=phylum_o)

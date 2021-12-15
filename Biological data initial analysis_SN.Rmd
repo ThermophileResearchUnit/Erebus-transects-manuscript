@@ -537,8 +537,6 @@ erebus_p <- erebus_p %>%
   select(OTU, Sample, Abundance,  Site, Transect, Temperature, pH, Kingdom, Phylum, Class, Order, Family, Genus)
 # I retained all the taxonomy in case you want to cahnge the code and inspect other levels
 
-erebus_p["Phylum"][erebus_p["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
-
 # For Tramway Ridge sites the Rel Abundance of Archaea varied from 13 % to 57 %
 # For Western Crater sites the Rel Abundance of Archaea varied from 0.5 % to 7 %
 # In any case Archaea is generally higher than in most environments
@@ -578,10 +576,10 @@ plot_tree(wcr, ladderize="left", color="Phylum")
 ```
 
 ```{r}
-#Look at the abundance profile of whatever ASVs you want to; I use ASV_34 (Nitrospirota) and Thaumarchaeota as an example
+#Look at the abundance profile of whatever ASVs you want to; I use ASV_34 (Nitrospirota) and Crenarchaeota as an example
 
 erebus_asv <- erebus_p %>%
-  filter(., Phylum == "Thaumarchaeota" | OTU == "ASV_34" )
+  filter(., Phylum == "Crenarchaeota" | OTU == "ASV_34" )
 
 erebus_asv$Temperature <- as.factor(erebus_asv$Temperature)
 
@@ -606,4 +604,11 @@ heatmap_asv <- ggplot(erebus_asv, aes(Temperature, ASV_Phylum)) +
 
 heatmap_asv
 
+```
+
+```{r}
+#How many ASVs across all samples are Bacterial vs Archaeal?
+
+table(tax_table(erebusfr)[, "Kingdom"], exclude = NULL) 
+  
 ```

@@ -103,14 +103,14 @@ plot_kingdom<- ggplot(erebus_domain, aes(x = factor(Temperature), y = Abundance,
 # Data for plotting
 erebus_p <- erebusfr %>% psmelt()
 
-erebus_p["Phylum"][erebus_p["Phylum"] == "Crenarchaeota"] <- "Thaumarchaeota"
 erebus_p["Phylum"][which(erebus_p$Abundance < 0.01), ] <- "Phyla < 1 %"
 erebus_p$Phylum[is.na(erebus_p$Phylum)] = "Unassigned"
   
 
 #Reorder phyla so <1% is first, then alphabetical
 x <- c("Phyla < 1 %","Acidobacteriota","Actinobacteriota","Armatimonadota",
-                                    "Bacteroidota", "Chloroflexi","Cyanobacteria",
+                                    "Bacteroidota", "Chloroflexi", "Crenarchaeota",
+                                    "Cyanobacteria",
                                     "Deinococcota","Firmicutes","GAL15",
                                     "Myxococcota","Nitrospirota", "Planctomycetota",
                                     "Proteobacteria","Thaumarchaeota",
@@ -149,9 +149,9 @@ plot_kingdom_phylum <- ggarrange(plot_kingdom, plot_phylum,
 
 plot_kingdom_phylum
 
-#ggsave("Figure 4_SN.png", plot = plot_kingdom_phylum, dpi = 300, width = 240, height = 180, units = "mm")
+#ggsave("Figure 5_SN.png", plot = plot_kingdom_phylum, dpi = 300, width = 240, height = 180, units = "mm")
 
-#ggsave("Figure 4_SN.svg", plot = plot_kingdom_phylum, dpi = 300, width = 240, height = 180, units = "mm")
+#ggsave("Figure 5_SN.svg", plot = plot_kingdom_phylum, dpi = 300, width = 240, height = 180, units = "mm")
 
 ```
 

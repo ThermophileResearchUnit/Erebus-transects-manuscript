@@ -322,13 +322,13 @@ cap_plot_all <- ggplot(envdata.cn, aes(x= CAP1, y= CAP2, color = pH,
     geom_segment(aes(x = 0.0, y =0.0,xend = arrows_x$Nitrogen, 
                    yend = arrows_y$Nitrogen), arrow =arrow(), color = "black") +
   geom_text(label = "pH", x = arrows_x$pH, y = arrows_y$pH) +
-    geom_text(label = "Conductivity", x = arrows_x$Conductivity, y = arrows_y$Conductivity) +
+    geom_text(label = "EC", x = arrows_x$Conductivity, y = arrows_y$Conductivity) +
     geom_text(label = "GWC", x = arrows_x$GWC, y = arrows_y$GWC) +
     geom_text(label = "P", x = arrows_x$P, y = arrows_y$P) +
     geom_text(label = "S", x = arrows_x$S, y = arrows_y$S) +
     geom_text(label = "Fe", x = arrows_x$Fe, y = arrows_y$Fe) +
-    geom_text(label = "C", x = arrows_x$Carbon, y = arrows_y$Carbon) +
-      geom_text(label = "N", x = arrows_x$Nitrogen, y = arrows_y$Nitrogen) +
+    geom_text(label = "TC", x = arrows_x$Carbon, y = arrows_y$Carbon) +
+      geom_text(label = "TN", x = arrows_x$Nitrogen, y = arrows_y$Nitrogen) +
     geom_text(label = "Temperature", x = arrows_x$Temperature, 
               y = arrows_y$Temperature) +
   theme(
@@ -338,9 +338,11 @@ cap_plot_all <- ggplot(envdata.cn, aes(x= CAP1, y= CAP2, color = pH,
     axis.text.y  = element_text(size=12),
     strip.text = element_text(size=14),
     strip.background = element_blank(),
-    legend.title = element_text(size=16),
-    legend.text = element_text(size=16)) +
-  guides(size = "none", shape = guide_legend(override.aes = list(size = 4)))
+    legend.title = element_text(size=14),
+    legend.text = element_text(size=14),
+    legend.position = "bottom") +
+  guides(size = "none", shape = guide_legend(override.aes = list(size = 4), 
+                                             nrow = 2))
 
 cap_plot_all
 
@@ -368,8 +370,8 @@ cap_plot_tr <- ggplot(envdata.cn_tr, aes(x= CAP1, y= CAP2, color = pH,
       geom_segment(aes(x = 0.0, y =0.0,xend = arrows_tr_x$Cu, 
                    yend = arrows_tr_y$Cu), arrow =arrow(), color = "black") +
     geom_text(label = "pH", x = arrows_tr_x$pH, y = arrows_tr_y$pH) +
-      geom_text(label = "C", x = arrows_tr_x$Carbon, y = arrows_tr_y$Carbon) +
-      geom_text(label = "N", x = arrows_tr_x$Nitrogen, y = arrows_tr_y$Nitrogen) +
+      geom_text(label = "TC", x = arrows_tr_x$Carbon, y = arrows_tr_y$Carbon) +
+      geom_text(label = "TN", x = arrows_tr_x$Nitrogen, y = arrows_tr_y$Nitrogen) +
     geom_text(label = "Fe", x = arrows_tr_x$Fe, y = arrows_tr_y$Fe) +
       geom_text(label = "Zn", x = arrows_tr_x$Zn, y = arrows_tr_y$Zn) +
       geom_text(label = "Cu", x = arrows_tr_x$Cu, y = arrows_tr_y$Cu) +
@@ -380,19 +382,25 @@ cap_plot_tr <- ggplot(envdata.cn_tr, aes(x= CAP1, y= CAP2, color = pH,
     axis.text.y  = element_text(size=12),
     strip.text = element_text(size=14),
     strip.background = element_blank(),
-    legend.title = element_text(size=16),
-    legend.text = element_text(size=16)) +
-  guides(size = "none", shape = guide_legend(override.aes = list(size = 4)))
+    legend.title = element_text(size=14),
+    legend.text = element_text(size=14),
+    legend.position = "bottom") +
+  guides(size = "none", shape = guide_legend(override.aes = list(size = 4),
+                                             nrow = 2))
 
 cap_plot_tr
 
+plot_cap_final <- ggarrange(cap_plot_all, cap_plot_tr,
+                            nrow = 1,
+                            ncol = 2,
+                            labels = c("A", "B"))
 
-#ggsave("Figure 2E.png", cap_plot_all, width = 240, height = 90, units = "mm", dpi = 300)
+plot_cap_final
 
-#ggsave("Figure 2E.svg", cap_plot_all, width = 240, height = 90, units = "mm", dpi = 300)
 
-#ggsave("Figure 3E.png", cap_plot_tr, width = 240, height = 90, units = "mm", dpi = 300)
+#ggsave("Figure 4.png", plot_cap_final, width = 220, height = 120, units = "mm", dpi = 300)
 
-#ggsave("Figure 3E.svg", cap_plot_tr, width = 240, height = 90, units = "mm", dpi = 300)
+#ggsave("Figure 4.svg", plot_cap_final, width = 220, height = 120, units = "mm", dpi = 300)
+
 ```
 
