@@ -5,21 +5,21 @@ To explore abundance profiles for whichever ASVs you want to look at, see the co
 
 R files:
 
-Analysis of microbial community_SN: code for creating Figure 4 in the paper.
+Analysis of microbial community_SN: code for creating Figure 5 in the paper.
 
-Biological data initial analysis_SN: code for initial analysis and visualization of biological data, producing Sup. Fig 3 and Sup. Fig 2C
+Biological data initial analysis_SN: code for initial analysis and visualization of biological data, producing Sup. Fig 1 and Sup. Fig 2C
 
-Env and bio data_SN: code for analyzing correlations between biological and environmental data, producing Fig. 2E and 3E
+Env and bio data_SN: code for analyzing correlations between biological and environmental data, producing Fig. 4
 
-Environmental data_SN: code for analyzing environmental data, producing Fig. 2A-D, Fig. 3A-D, and Sup. Fig 2A-B
+Environmental data_SN: code for analyzing environmental data, producing Fig. 2-3 and Sup. Fig 2A-B
 
-Erebus_random_forest_SN: code for Random Forest analysis, producing Figure 5
+Erebus_random_forest_SN: code for Random Forest analysis, producing Figure 6
 
 Erebus_venn_diagram: code for producing Sup. Figure 4B
 
-Isotopes_SN: code for producing Sup. Figure 1
+Isotopes_SN: code for producing Sup. Figure 3
 
-Network analysis: code for network analysis, producing Figure 6
+Network analysis: code for network analysis, producing Figure 7
 
 Shannon-Diversity_SN: code for producing Sup. Figure 4A
 
