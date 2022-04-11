@@ -349,12 +349,13 @@ cap_plot_all
 ###TR
 cap_plot_tr <- ggplot(envdata.cn_tr, aes(x= CAP1, y= CAP2, color = pH, 
                                        shape = Transect)) + 
-  geom_point(aes(size=4)) +
+  geom_point(aes(size=1, stroke = 2)) +
   ylab("CAP2 (19.1%)") +
   xlab("CAP1 (35.7%)") +
   theme_bw() +
   #geom_text(aes(label = Sample), nudge_x = 0.05, nudge_y = 0.05) +
   scale_color_viridis("pH", direction = -1) +
+  scale_shape_manual(values=c(10, 1))+
   geom_hline(yintercept = 0, linetype="dotted") + 
   geom_vline(xintercept = 0, linetype="dotted") +
   geom_segment(aes(x = 0.0, y =0.0,xend = arrows_tr_x$pH, 

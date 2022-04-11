@@ -83,6 +83,7 @@ icp_el %>%
 
 ```{r}
 ### stats for env parameters
+envdata <- envdata %>% mutate(`C:N` = Carbon / Nitrogen)
 abiotic <- abiotic %>% mutate(`C:N` = Carbon / Nitrogen)
 
 t.test(pH~Site, data = abiotic)
@@ -94,6 +95,107 @@ t.test(`C:N`~Site, data = abiotic)
 
 #pH, EC, GWC, TC, TN are all significant between TR and WC
 ```
+
+```{r}
+#Spearman's rho for correlation between temp and other parameters
+envdata_tr <- envdata %>%
+  filter(Site == "Tramway Ridge")
+envdata_wc <- envdata %>%
+  filter(Site == "Western Crater")
+
+cor.test(envdata_tr$Temperature, envdata_tr$pH, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$pH, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Conductivity, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Conductivity, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Carbon, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Carbon, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Nitrogen, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Nitrogen, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$GWC, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$GWC, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$`C:N`, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$`C:N`, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Na, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Na, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Mg, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Mg, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$K, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$K, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Ca, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Ca, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Sr, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Sr, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Ba, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Ba, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$P, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$P, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$S, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$S, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Se, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Se, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Al, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Al, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Tl, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Tl, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Pb, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Pb, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$B, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$B, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$As, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$As, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$V, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$V, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Cr, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Cr, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Mn, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Mn, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Fe, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Fe, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Co, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Co, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Ni, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Ni, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Cu, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Cu, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Zn, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Zn, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$Cd, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$Cd, method = 'spearman')
+
+cor.test(envdata_tr$Temperature, envdata_tr$U, method = 'spearman')
+cor.test(envdata_wc$Temperature, envdata_wc$U, method = 'spearman')
+
+#sig correlations: pH@WC, TC@WC, TN@WC, C:N@WC, Pb@WC, Cd@WC
+```
+
 
 ```{r}
 
@@ -225,38 +327,38 @@ temp_pH <- ggplot(data = abiotic, aes(x = Temperature, y = pH)) +
     strip.background = element_blank(),
     legend.position="none")
 
-temp_conductivity <- ggplot(data = abiotic, aes(x = Temperature, y = Conductivity)) +
-  geom_line(aes(colour = Site)) +
-  geom_point(aes(colour=Site), size=2) +
-  scale_y_log10() +
-  ylab("EC (μS/cm)") +
-  theme_bw() +
-  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
-    scale_y_continuous(n.breaks = 4) +
-  theme(
-    axis.title.x = element_blank (),
-    axis.text.x  = element_text(size=11),
-    axis.title.y = element_text(size=11),
-    axis.text.y  = element_text(size=10),
-    strip.text = element_text(size=13),
-    strip.background = element_blank(),
-    legend.position="none")
+#temp_conductivity <- ggplot(data = abiotic, aes(x = Temperature, y = Conductivity)) +
+ # geom_line(aes(colour = Site)) +
+  #geom_point(aes(colour=Site), size=2) +
+  #scale_y_log10() +
+  #ylab("EC (μS/cm)") +
+  #theme_bw() +
+  #scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+   # scale_y_continuous(n.breaks = 4) +
+  #theme(
+   # axis.title.x = element_blank (),
+  #  axis.text.x  = element_text(size=11),
+   # axis.title.y = element_text(size=11),
+  #  axis.text.y  = element_text(size=10),
+   # strip.text = element_text(size=13),
+  #  strip.background = element_blank(),
+   # legend.position="none")
 
-temp_gwc <- ggplot(data = abiotic, aes(x = Temperature, y = GWC)) +
-  geom_line(aes(colour = Site)) +
-  geom_point(aes(colour=Site), size=2) +
-  ylab("GWC (%)") +
-  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
-    scale_y_continuous(n.breaks = 4) +
-  theme_bw() +
-  theme(
-    axis.title.x = element_blank (),
-    axis.text.x  = element_text(size=11),
-    axis.title.y = element_text(size=11),
-    axis.text.y  = element_text(size=10),
-    strip.text = element_text(size=13),
-    strip.background = element_blank(),
-    legend.position = "none")
+#temp_gwc <- ggplot(data = abiotic, aes(x = Temperature, y = GWC)) +
+ # geom_line(aes(colour = Site)) +
+  #geom_point(aes(colour=Site), size=2) +
+  #ylab("GWC (%)") +
+  #scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+   # scale_y_continuous(n.breaks = 4) +
+  #theme_bw() +
+  #theme(
+   # axis.title.x = element_blank (),
+  #  axis.text.x  = element_text(size=11),
+   # axis.title.y = element_text(size=11),
+  #  axis.text.y  = element_text(size=10),
+   # strip.text = element_text(size=13),
+  #  strip.background = element_blank(),
+   # legend.position = "none")
 
 temp_carbon <- ggplot(data = abiotic, aes(x = Temperature, y = Carbon)) +
   geom_line(aes(colour = Site)) +
@@ -312,8 +414,8 @@ env_box <- ggarrange(temp_pH_avg, temp_conductivity_avg, temp_gwc_avg,
           nrow = 2)
           
           
-env_lines <- ggarrange(temp_pH, temp_conductivity, temp_gwc, 
-          temp_carbon, temp_nitrogen, temp_cn,
+env_lines <- ggarrange(temp_pH, temp_carbon, temp_nitrogen, temp_cn,
+                       #temp_conductivity, #temp_gwc,
           ncol = 3, nrow = 2)
 
 env_box
@@ -354,11 +456,13 @@ t.test(U~Site, data = envdata)
 #Mg, P, Tl, Cr, Mn, and Cd are all significant. S, Cu, Fe, Zn, and Pb have interesting temp patterns
 ```
 
+
+
 ```{r}
 #ICPMS plotting
 
 metals3<- envdata %>%
-  select(Site, Temperature, Mg, P, Tl, Cr, Mn, Cd, S, Cu, Fe, Zn, Pb) 
+  select(Site, Temperature, Mg, P, Tl, Cr, Mn, Cd, S, Fe, Pb) 
 
 metals3["Site"][metals3["Site"] == "Tramway Ridge"] <- "TR"
 metals3["Site"][metals3["Site"] == "Western Crater"] <- "WC"
@@ -366,14 +470,14 @@ metals3["Site"][metals3["Site"] == "Western Crater"] <- "WC"
 metals3 <- metals3 %>%
   pivot_longer(!c(Site, Temperature), names_to ="Element", values_to = "values")
 
-metals_order <- c("Cr", "Mg", "P", "Cd", "Mn", "Tl","Cu", "Fe", "Pb", "S", "Zn")
+metals_order <- c("Cr", "Mg", "P", "Cd", "Mn", "Tl","Fe", "Pb", "S")
 
 metals3$Element <- factor(metals3$Element, levels = metals_order, ordered = TRUE)
 
 plot_metal3_box <- ggplot(metals3, aes(x = Site, y = values,
                                        fill = Site)) + 
   geom_boxplot() +
-  facet_wrap(Element~., scales = "free_y", ncol = 3) +
+  facet_wrap(Element~., scales = "free_y", ncol = 6) +
   ylab("ppb") +
   #xlab("Temperature (\u00b0C)") +
   theme_bw() +
@@ -389,44 +493,70 @@ plot_metal3_box <- ggplot(metals3, aes(x = Site, y = values,
     strip.background = element_blank(),
     legend.position = "none")
 
-plot_metal3_lines <- ggplot(metals3, aes(x = Temperature, y = values)) + 
-  geom_line(aes(color = Site)) +
-  geom_point(aes(colour = Site), size=2) +
-  facet_wrap(Element~., scales = "free_y", ncol = 3) +
-  ylab("ppb") +
-  #xlab("Temperature (\u00b0C)") +
-  theme_bw() +
+#Temp plotting
+temp_Pb <- ggplot(data = envdata, aes(x = Temperature, y = Pb)) +
+  geom_line(aes(colour = Site)) +
+  geom_point(aes(colour=Site), size=2) +
+  ylab("Pb (ppb)") +
   scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
-  scale_y_continuous(n.breaks = 4) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
   theme(
     axis.title.x = element_blank(),
-    axis.text.x = element_text(size=11),
-    axis.title.y = element_text(size=13),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
     axis.text.y  = element_text(size=10),
-    strip.text = element_text(size=12),
+    strip.text = element_text(size=13),
     strip.background = element_blank(),
-    legend.position = "none")
+    legend.position="none")
+
+temp_Cd <- ggplot(data = envdata, aes(x = Temperature, y = Cd)) +
+  geom_line(aes(colour = Site)) +
+  geom_point(aes(colour=Site), size=2) +
+  ylab("Cd (ppb)") +
+  scale_colour_manual(values=c("#a6611a", "#67a9cf")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+plot_metal3_lines <- ggarrange(temp_Cd, temp_Pb,
+          ncol = 2, nrow = 1)
+
 
 plot_metal3_box
 plot_metal3_lines
 
+plot_all_lines <- ggarrange(temp_pH, temp_carbon, temp_nitrogen, temp_cn,
+                            temp_Cd, temp_Pb,
+          ncol = 3, nrow = 2)
+
+plot_all_lines
 ```
 
 ```{r}
-all_geochem <- ggarrange(env_box, env_lines,
-                         plot_metal3_box, plot_metal3_lines,
-          labels = c("A","B","C","D"),
+all_geochem_1 <- ggarrange(env_box, plot_all_lines,
+          labels = c("A","B"),
           ncol = 2,
-          nrow = 2,
-          heights = c(0.9, 1.5),
-          common.legend = TRUE,
+          nrow = 1)
+
+all_geochem <- ggarrange(all_geochem_1, plot_metal3_box,
+                                   ncol = 1, nrow = 2,
+                                   labels = c("","C"),
+                                   common.legend = TRUE,
           legend = "bottom")
 
 all_geochem
 
-#ggsave("Figure 2A-D.png", all_geochem, width = 240, height = 160, units = "mm", dpi = 300)
+#ggsave("Figure 2A-C.png", all_geochem, width = 240, height = 160, units = "mm", dpi = 300)
 
-#ggsave("Figure 2A-D.svg", all_geochem, width = 240, height = 160, units = "mm", dpi = 300)
+#ggsave("Figure 2A-C.svg", all_geochem, width = 240, height = 160, units = "mm", dpi = 300)
 
 ```
 
@@ -446,6 +576,106 @@ t.test(Nitrogen~Transect, data = abiotic_tr)
 t.test(`C:N`~Transect, data = abiotic_tr)
 
 #nothing is significant
+```
+
+```{r}
+#Spearman's rho for correlation between temp and other parameters
+envdata_tr1 <- envdata %>%
+  filter(Transect == "TR1")
+envdata_tr2 <- envdata %>%
+  filter(Transect == "TR2")
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$pH, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$pH, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Conductivity, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Conductivity, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Carbon, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Carbon, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Nitrogen, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Nitrogen, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$GWC, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$GWC, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$`C:N`, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$`C:N`, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Na, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Na, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Mg, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Mg, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$K, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$K, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Ca, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Ca, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Sr, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Sr, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Ba, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Ba, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$P, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$P, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$S, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$S, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Se, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Se, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Al, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Al, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Tl, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Tl, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Pb, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Pb, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$B, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$B, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$As, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$As, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$V, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$V, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Cr, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Cr, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Mn, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Mn, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Fe, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Fe, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Co, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Co, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Ni, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Ni, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Cu, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Cu, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Zn, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Zn, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$Cd, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$Cd, method = 'spearman')
+
+cor.test(envdata_tr1$Temperature, envdata_tr1$U, method = 'spearman')
+cor.test(envdata_tr2$Temperature, envdata_tr2$U, method = 'spearman')
+
+#sig correlations: none
 ```
 
 ```{r}
@@ -574,37 +804,37 @@ temp_pH_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = pH)) +
     strip.background = element_blank(),
     legend.position="none")
 
-temp_conductivity_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = Conductivity)) +
-  geom_line(aes(colour = Transect)) +
-  geom_point(aes(colour=Transect), size=2) +
-  ylab("EC (μS/cm)") +
-  theme_bw() +
-  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
-      scale_y_continuous(n.breaks = 4) +
-  theme(
-    axis.title.x = element_blank (),
-    axis.text.x  = element_text(size=11),
-    axis.title.y = element_text(size=11),
-    axis.text.y  = element_text(size=10),
-    strip.text = element_text(size=13),
-    strip.background = element_blank(),
-    legend.position="none")
+#temp_conductivity_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = Conductivity)) +
+ # geom_line(aes(colour = Transect)) +
+#  geom_point(aes(colour=Transect), size=2) +
+ # ylab("EC (μS/cm)") +
+  #theme_bw() +
+  #scale_colour_manual(values=c("#b2182b","#ef8a62")) +
+   #   scale_y_continuous(n.breaks = 4) +
+  #theme(
+   # axis.title.x = element_blank (),
+  #  axis.text.x  = element_text(size=11),
+   # axis.title.y = element_text(size=11),
+  #  axis.text.y  = element_text(size=10),
+   # strip.text = element_text(size=13),
+  #  strip.background = element_blank(),
+   # legend.position="none")
 
-temp_gwc_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = GWC)) +
-  geom_line(aes(colour = Transect)) +
-  geom_point(aes(colour=Transect), size=2) +
-  ylab("GWC (%)") +
-  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
-    scale_y_continuous(n.breaks = 4) +
-  theme_bw() +
-  theme(
-    axis.title.x = element_blank (),
-    axis.text.x  = element_text(size=11),
-    axis.title.y = element_text(size=11),
-    axis.text.y  = element_text(size=10),
-    strip.text = element_text(size=13),
-    strip.background = element_blank(),
-    legend.position = "none")
+#temp_gwc_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = GWC)) +
+ # geom_line(aes(colour = Transect)) +
+#  geom_point(aes(colour=Transect), size=2) +
+ # ylab("GWC (%)") +
+#  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
+ #   scale_y_continuous(n.breaks = 4) +
+#  theme_bw() +
+ # theme(
+  #  axis.title.x = element_blank (),
+   # axis.text.x  = element_text(size=11),
+  #  axis.title.y = element_text(size=11),
+  #  axis.text.y  = element_text(size=10),
+  #  strip.text = element_text(size=13),
+   # strip.background = element_blank(),
+  #  legend.position = "none")
 
 temp_carbon_tr <- ggplot(data = abiotic_tr, aes(x = Temperature, y = Carbon)) +
   geom_line(aes(colour = Transect)) +
@@ -660,7 +890,7 @@ env_box_tr <- ggarrange(temp_pH_avg_tr, temp_conductivity_avg_tr, temp_gwc_avg_t
           nrow = 2)
           
           
-env_lines_tr <- ggarrange(temp_pH_tr, temp_conductivity_tr, temp_gwc_tr, 
+env_lines_tr <- ggarrange(temp_pH_tr, #temp_conductivity_tr, #temp_gwc_tr, 
           temp_carbon_tr, temp_nitrogen_tr, temp_cn_tr,
           ncol = 3, nrow = 2)
 
@@ -708,20 +938,20 @@ t.test(U~Transect, data = envdata_tr)
 #ICPMS plotting
 
 metals3_tr <- envdata %>%
-  select(Transect, Temperature, Mg, P, Tl, Cr, Mn, Cd, S, Cu, Fe, Zn, Pb) %>%
+  select(Transect, Temperature, Mg, P, Tl, Cr, Mn, Cd, S, Fe, Pb)  %>%
   filter(., Transect != "WC")
 
 metals3_tr <- metals3_tr %>%
   pivot_longer(!c(Transect, Temperature), names_to ="Element", values_to = "values")
 
-metals_order <- c("Cr", "Mg", "P", "Cd", "Mn", "Tl","Cu", "Fe", "Pb", "S", "Zn")
+metals_order <- c("Cr", "Mg", "P", "Cd", "Mn", "Tl","Fe", "Pb", "S")
 
 metals3_tr$Element <- factor(metals3_tr$Element, levels = metals_order, ordered = TRUE)
 
 plot_metal3_box_tr <- ggplot(metals3_tr, aes(x = Transect, y = values,
                                        fill = Transect)) + 
   geom_boxplot() +
-  facet_wrap(Element~., scales = "free_y", ncol = 3) +
+  facet_wrap(Element~., scales = "free_y", ncol = 6) +
   ylab("ppb") +
   #xlab("Temperature (\u00b0C)") +
   theme_bw() +
@@ -737,45 +967,73 @@ plot_metal3_box_tr <- ggplot(metals3_tr, aes(x = Transect, y = values,
     strip.background = element_blank(),
     legend.position = "none")
 
-plot_metal3_lines_tr <- ggplot(metals3_tr, aes(x = Temperature, y = values)) + 
-  geom_line(aes(color = Transect)) +
-  geom_point(aes(colour = Transect), size=2) +
-  facet_wrap(Element~., scales = "free_y", ncol = 3) +
-  ylab("ppb") +
-  #xlab("Temperature (\u00b0C)") +
-  theme_bw() +
+#Temp plotting
+temp_Pb_tr <- ggplot(data = envdata_tr, aes(x = Temperature, y = Pb)) +
+  geom_line(aes(colour = Transect)) +
+  geom_point(aes(colour=Transect), size=2) +
+  ylab("Pb (ppb)") +
   scale_colour_manual(values=c("#b2182b","#ef8a62")) +
-  scale_y_continuous(n.breaks = 4) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
   theme(
     axis.title.x = element_blank(),
-    axis.text.x = element_text(size=11),
-    axis.title.y = element_text(size=13),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
     axis.text.y  = element_text(size=10),
-    strip.text = element_text(size=12),
+    strip.text = element_text(size=13),
     strip.background = element_blank(),
-    legend.position = "none")
+    legend.position="none")
+
+temp_Cd_tr <- ggplot(data = envdata_tr, aes(x = Temperature, y = Cd)) +
+  geom_line(aes(colour = Transect)) +
+  geom_point(aes(colour=Transect), size=2) +
+  ylab("Cd (ppb)") +
+  scale_colour_manual(values=c("#b2182b","#ef8a62")) +
+    scale_y_continuous(n.breaks = 4) +
+  theme_bw() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x  = element_text(size=11),
+    axis.title.y = element_text(size=11),
+    axis.text.y  = element_text(size=10),
+    strip.text = element_text(size=13),
+    strip.background = element_blank(),
+    legend.position="none")
+
+plot_metal3_lines_tr <- ggarrange(temp_Cd, temp_Pb,
+          ncol = 2, nrow = 1)
 
 plot_metal3_box_tr
 plot_metal3_lines_tr
+
+plot_all_lines <- ggarrange(temp_pH_tr, temp_carbon_tr, 
+                            temp_nitrogen_tr, temp_cn_tr,
+                            temp_Cd_tr, temp_Pb_tr,
+          ncol = 3, nrow = 2)
+
+plot_all_lines
 
 ```
 
 
 ```{r}
-all_geochem_tr <- ggarrange(env_box_tr, env_lines_tr,
-                         plot_metal3_box_tr, plot_metal3_lines_tr,
-          labels = c("A","B","C","D"),
+all_geochem_1_tr <- ggarrange(env_box_tr, plot_all_lines,
+          labels = c("A","B"),
           ncol = 2,
-          nrow = 2,
-          heights = c(0.9, 1.5),
-          common.legend = TRUE,
+          nrow = 1)
+
+all_geochem_tr <- ggarrange(all_geochem_1_tr, plot_metal3_box_tr,
+                                   ncol = 1, nrow = 2,
+                                   labels = c("","C"),
+                                   common.legend = TRUE,
           legend = "bottom")
 
 all_geochem_tr
 
-#ggsave("Figure 3A-D.png", all_geochem_tr, width = 240, height = 160, units = "mm", dpi = 300)
+#ggsave("Figure S4.png", all_geochem_tr, width = 240, height = 160, units = "mm", dpi = 300)
 
-#ggsave("Figure 3A-D.svg", all_geochem_tr, width = 240, height = 160, units = "mm", dpi = 300)
+#ggsave("Figure S4.svg", all_geochem_tr, width = 240, height = 160, units = "mm", dpi = 300)
+```
 
 ```
 

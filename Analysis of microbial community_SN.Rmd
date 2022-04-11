@@ -81,7 +81,7 @@ plot_kingdom<- ggplot(erebus_domain, aes(x = factor(Temperature), y = Abundance,
                      fill = factor(Kingdom, levels = c("Bacteria", "Archaea")))) +
   geom_bar(stat = "identity") +
   facet_wrap(~ Transect, scales = "free") +
-  scale_fill_manual(values = c("#b3e2cd","#e41a1c")) +
+  scale_fill_manual(values = c("#e0f3f8","#e41a1c")) +
   labs(x = "Temperature (\u00b0C)", y = "Relative \nAbundance") +
   theme(
     strip.background = element_blank(),

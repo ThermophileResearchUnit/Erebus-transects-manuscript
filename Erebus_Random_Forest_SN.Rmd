@@ -266,9 +266,19 @@ rf.site.data_all <- left_join(rf.site.data, site.ab, by = "ASV")
 #Heatmap of ASVs that allow for discriminating between transects
 #replace NA in Phylum with Unassigned
 rf.site.data_all$Phylum[is.na(rf.site.data_all$Phylum)] <- 'Unassigned'
+rf.site.data_all[is.na(rf.site.data_all)] <- ''
+rf.site.data_all$Genus[rf.site.data_all$Genus == 'Candidatus Nitrocosmicus'] <- 'Ca. Nitrocosmicus'
+rf.site.data_all$Genus[rf.site.data_all$Genus == 'Candidatus Nitrososphaera'] <- 'Ca. Nitrososphaera'
+
 
 rf.site.data_all$ASV_Phylum = paste(rf.site.data_all$Kingdom,
-                                    rf.site.data_all$Phylum, rf.site.data_all$ASV) 
+                                    rf.site.data_all$Phylum, 
+                                    rf.site.data_all$Class,
+                                    rf.site.data_all$Order,
+                                    rf.site.data_all$Family,
+                                    rf.site.data_all$Genus,
+                                    rf.site.data_all$ASV
+                                    ) 
 
 rf.site.data_all$MeanDecreaseGini <- factor(rf.site.data_all$MeanDecreaseGini)
 
@@ -296,24 +306,25 @@ heatmap_f <- ggplot(rf.site.melt, aes(variable, ASV_Phylum)) +
   geom_tile(aes(fill = value)) +
   theme_bw() +
   scale_fill_distiller('CLR \nAbundance', palette = "YlOrRd", direction = 1) +
-  ylab("Phylum, ASV #") +
+  ylab("Lowest taxonomic assignment, ASV #") +
   xlab("Temperature (\u00b0C)") +
   theme(
-    axis.title.x = element_text (size=16),
-    axis.text.x  = element_text(size=14, angle = 45,
+    axis.title.x = element_text (size=14),
+    axis.text.x  = element_text(size=12, angle = 45,
                                 hjust= 1.3, vjust=1.3),
-    axis.title.y = element_text(size=16),
-    axis.text.y  = element_text(size=10),
+    axis.title.y = element_blank(),
+    axis.text.y  = element_text(size=8),
     strip.text.x = element_text(size = 14),
-    legend.text = element_text(size=14),
-    legend.title = element_text(size=14)) +
+    legend.text = element_text(size=12),
+    legend.title = element_text(size=12),
+    legend.position = c(-1.25, 0.55)) +
   facet_grid(.~Transect, scales = "free")
 
 heatmap_f
 
-#ggsave("Figure 6.png", heatmap_f, width = 240, height = 240, units = "mm",dpi = 300)
+ggsave("Figure 6.png", heatmap_f, width = 240, height = 200, units = "mm",dpi = 300)
 
-#ggsave("Figure 6.svg", heatmap_f, width = 240, height = 240, units = "mm",dpi = 300)
+ggsave("Figure 6.svg", heatmap_f, width = 240, height = 200, units = "mm",dpi = 300)
 
 ```
 
